@@ -10,6 +10,9 @@ class ApiEndpoint {
   static const String userDetails = "/profile/me";
   static const String autoSelectKitchen = "/kitchen/recomend";
   static const String AddtoCart = "/cart";
+  static const String GetCart = "/cart";
+  static const String Getprofile = "/profile/me";
+  static const String cartItemdelete = "/cart";
 
   //  Helper — automatically combines base URL + endpoint
   static String getUrl(String endpoint) {

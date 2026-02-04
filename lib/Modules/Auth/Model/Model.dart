@@ -421,3 +421,230 @@ class Addon {
     );
   }
 }
+
+
+// Cart model can be added here if needed
+
+
+
+class CartResponse {
+  final bool? success;
+  final CartData? cart;
+
+  CartResponse({this.success, this.cart});
+
+  factory CartResponse.fromJson(Map<String, dynamic> json) {
+    return CartResponse(
+      success: json['success'],
+      cart: json['cart'] != null ? CartData.fromJson(json['cart']) : null,
+    );
+  }
+}
+
+class CartData {
+  final String? userId;
+  final String? kitchenId;
+  final List<CartItem>? items;
+  final String? updatedAt;
+
+  CartData({
+    this.userId,
+    this.kitchenId,
+    this.items,
+    this.updatedAt,
+  });
+
+  factory CartData.fromJson(Map<String, dynamic> json) {
+    return CartData(
+      userId: json['userId'],
+      kitchenId: json['kitchenId'],
+      items: (json['items'] as List?)
+          ?.map((e) => CartItem.fromJson(e))
+          .toList(),
+      updatedAt: json['updatedAt'],
+    );
+  }
+}
+
+class CartItem {
+  final String? menuItemId;
+  final String? name;
+  final CartVariant? variant;
+  final List<CartAddon>? addons;
+  final int? quantity;
+  final CartCustomization? customization;
+  final int? itemTotal;
+
+  CartItem({
+    this.menuItemId,
+    this.name,
+    this.variant,
+    this.addons,
+    this.quantity,
+    this.customization,
+    this.itemTotal,
+  });
+
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    return CartItem(
+      menuItemId: json['menuItemId'],
+      name: json['name'],
+      variant:
+          json['variant'] != null ? CartVariant.fromJson(json['variant']) : null,
+      addons: (json['addons'] as List?)
+          ?.map((e) => CartAddon.fromJson(e))
+          .toList(),
+      quantity: json['quantity'],
+      customization: json['customization'] != null
+          ? CartCustomization.fromJson(json['customization'])
+          : null,
+      itemTotal: json['itemTotal'],
+    );
+  }
+}
+
+class CartVariant {
+  final String? label;
+  final int? price;
+
+  CartVariant({this.label, this.price});
+
+  factory CartVariant.fromJson(Map<String, dynamic> json) {
+    return CartVariant(
+      label: json['label'],
+      price: json['price'],
+    );
+  }
+}
+
+class CartAddon {
+  final String? name;
+  final int? price;
+
+  CartAddon({this.name, this.price});
+
+  factory CartAddon.fromJson(Map<String, dynamic> json) {
+    return CartAddon(
+      name: json['name'],
+      price: json['price'],
+    );
+  }
+}
+
+class CartCustomization {
+  final String? spiceLevel;
+  final bool? isJain;
+  final String? notes;
+
+  CartCustomization({
+    this.spiceLevel,
+    this.isJain,
+    this.notes,
+  });
+
+  factory CartCustomization.fromJson(Map<String, dynamic> json) {
+    return CartCustomization(
+      spiceLevel: json['spiceLevel'],
+      isJain: json['isJain'],
+      notes: json['notes'],
+    );
+  }
+}
+
+
+//  Getprofile model can be added here if needed
+
+class UserProfileResponse {
+  final bool? success;
+  final UserData? user;
+
+  UserProfileResponse({this.success, this.user});
+
+  factory UserProfileResponse.fromJson(Map<String, dynamic> json) {
+    return UserProfileResponse(
+      success: json['success'],
+      user: json['user'] != null ? UserData.fromJson(json['user']) : null,
+    );
+  }
+}
+
+class UserData {
+  final String? id;
+  final String? fullName;
+  final String? email;
+  final String? mobile;
+  final String? role;
+  final String? profileImage;
+  final bool? profileCompleted;
+  final DefaultAddress? defaultAddress;
+
+  UserData({
+    this.id,
+    this.fullName,
+    this.email,
+    this.mobile,
+    this.role,
+    this.profileImage,
+    this.profileCompleted,
+    this.defaultAddress,
+  });
+
+  factory UserData.fromJson(Map<String, dynamic> json) {
+    return UserData(
+      id: json['id'],
+      fullName: json['fullName'],
+      email: json['email'],
+      mobile: json['mobile'],
+      role: json['role'],
+      profileImage: json['profileImage'],
+      profileCompleted: json['profileCompleted'],
+      defaultAddress: json['defaultAddress'] != null
+          ? DefaultAddress.fromJson(json['defaultAddress'])
+          : null,
+    );
+  }
+}
+
+class DefaultAddress {
+  final GeoLocation? geoLocation;
+  final String? label;
+  final String? addressLine;
+  final bool? isDefault;
+  final String? id;
+
+  DefaultAddress({
+    this.geoLocation,
+    this.label,
+    this.addressLine,
+    this.isDefault,
+    this.id,
+  });
+
+  factory DefaultAddress.fromJson(Map<String, dynamic> json) {
+    return DefaultAddress(
+      geoLocation: json['geoLocation'] != null
+          ? GeoLocation.fromJson(json['geoLocation'])
+          : null,
+      label: json['label'],
+      addressLine: json['addressLine'],
+      isDefault: json['isDefault'],
+      id: json['_id'],
+    );
+  }
+}
+
+class GeoLocation {
+  final String? type;
+  final List<double>? coordinates;
+
+  GeoLocation({this.type, this.coordinates});
+
+  factory GeoLocation.fromJson(Map<String, dynamic> json) {
+    return GeoLocation(
+      type: json['type'],
+      coordinates: (json['coordinates'] as List?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
+    );
+  }
+}

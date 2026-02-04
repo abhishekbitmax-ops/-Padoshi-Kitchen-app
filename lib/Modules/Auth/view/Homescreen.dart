@@ -6,6 +6,7 @@ import 'package:padoshi_kitchen/Modules/Auth/Model/Model.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Menuscreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
+import 'package:shimmer/shimmer.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -96,12 +97,16 @@ class _HomescreenState extends State<Homescreen>
                 position: _slideAnimation,
                 child: Obx(() {
                   if (kitchenController.isLoading.value) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (kitchenController.kitchens.isEmpty) {
-                    return const Center(
-                      child: Text("No nearby kitchens found"),
+                    // Show shimmer placeholders while loading
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        _shimmerBanner(),
+                        const SizedBox(height: 28),
+                        _shimmerSectionTitle(),
+                        const SizedBox(height: 12),
+                        ...List.generate(3, (_) => _shimmerCard()),
+                      ],
                     );
                   }
 
@@ -113,10 +118,21 @@ class _HomescreenState extends State<Homescreen>
                       _sectionTitle(),
                       const SizedBox(height: 12),
 
-                      /// 🍽️ KITCHEN LIST
-                      ...kitchenController.kitchens.map(
-                        (kitchen) => _KitchenCard(kitchen: kitchen),
-                      ),
+                      // Show message when no kitchens, otherwise show list
+                      if (kitchenController.kitchens.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            "No nearby kitchens found",
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ] else ...[
+                        ...kitchenController.kitchens.map(
+                          (kitchen) => _KitchenCard(kitchen: kitchen),
+                        ),
+                      ],
                     ],
                   );
                 }),
@@ -242,6 +258,71 @@ class _HomescreenState extends State<Homescreen>
       ),
     );
   }
+
+  /// ✨ SHIMMER PLACEHOLDERS
+  Widget _shimmerBanner() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Container(
+        height: 170,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerSectionTitle() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Container(
+        height: 24,
+        width: 160,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(height: 18, width: 180, color: Colors.white),
+            const SizedBox(height: 8),
+            Container(height: 12, width: 120, color: Colors.white),
+            const SizedBox(height: 12),
+            Container(height: 12, width: double.infinity, color: Colors.white),
+            const SizedBox(height: 6),
+            Container(height: 12, width: double.infinity, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// 🍽️ DYNAMIC KITCHEN CARD
@@ -268,6 +349,36 @@ class _KitchenCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // TOP IMAGE (uses provided Unsplash URL as fallback)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              kitchen.restaurantInfo?.description ??
+                  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
+              height: 150,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'assets/images/demo_one.jpg',
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  height: 120,
+                  width: double.infinity,
+                  color: Colors.grey.shade200,
+                  alignment: Alignment.center,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           /// 🏠 NAME
           Text(
             kitchen.restaurantInfo?.name ?? "Kitchen",

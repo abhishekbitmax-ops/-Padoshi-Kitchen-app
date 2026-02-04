@@ -131,7 +131,7 @@ class AuthController extends GetxController {
     update();
   }
 
-  Future<void> saveProfile({
+  Future<bool> saveProfile({
     required String fullName,
     required String email,
     required Map<String, dynamic> address,
@@ -145,35 +145,27 @@ class AuthController extends GetxController {
       final token = TokenStorage.getAccessToken();
       if (token == null || token.isEmpty) {
         Get.snackbar("Session Expired", "Please login again");
-        return;
+        return false;
       }
 
       request.headers["Authorization"] = "Bearer $token";
       request.headers["Accept"] = "application/json";
 
-      /// BASIC FIELDS
       request.fields["fullName"] = fullName;
       request.fields["email"] = email;
 
-      /// ✅ ADDRESS (SEND AS FORM FIELDS, NOT JSON)
       request.fields["address[label]"] = address["label"] ?? "";
-
       request.fields["address[fullAddress]"] = address["fullAddress"] ?? "";
-
       request.fields["address[city]"] = address["city"] ?? "";
-
       request.fields["address[state]"] = address["state"] ?? "";
-
       request.fields["address[pincode]"] = address["pincode"] ?? "";
 
-      /// GEO LOCATION
       request.fields["address[geoLocation][type]"] = "Point";
       request.fields["address[geoLocation][coordinates][0]"] =
           address["geoLocation"]["coordinates"][0].toString();
       request.fields["address[geoLocation][coordinates][1]"] =
           address["geoLocation"]["coordinates"][1].toString();
 
-      /// IMAGE
       if (profileImage != null) {
         final ext = path.extension(profileImage!.path).toLowerCase();
         final mime = (ext == ".png") ? "png" : "jpeg";
@@ -189,20 +181,18 @@ class AuthController extends GetxController {
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
-
-      debugPrint("PROFILE RESPONSE: $responseBody");
-
       final data = jsonDecode(responseBody);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar("Success", data["message"]);
-        Get.offAll(() => const RestaurantBottomNav());
+        Get.snackbar("Success", data["message"] ?? "Profile updated");
+        return true;
       } else {
         Get.snackbar("Error", data["message"] ?? "Profile update failed");
+        return false;
       }
     } catch (e) {
-      debugPrint("SAVE PROFILE ERROR: $e");
       Get.snackbar("Error", "Something went wrong");
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -210,8 +200,6 @@ class AuthController extends GetxController {
 
   // kiten fetch current location model can be added here
 
-  /// ❌ ERROR MESSAGE
-  /// ❌ ERROR MESSAGE
   final errorMessage = "".obs;
 
   /// ⏳ LOADING
@@ -220,14 +208,30 @@ class AuthController extends GetxController {
   final kitchens = <Kitchen>[].obs;
 
   /// 📡 NEARBY KITCHENS API
-  Future<void> fetchNearbyKitchens() async {
+  ///
+  /// This method now retries a few times if the auth token isn't available
+  /// immediately (handles small race conditions during first app open).
+  Future<void> fetchNearbyKitchens({int retries = 3}) async {
     try {
-      isLoading.value = true;
-      errorMessage.value = "";
+      // mark loading immediately but update observable values after the frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        isLoading.value = true;
+        errorMessage.value = "";
+      });
 
       final token = TokenStorage.getAccessToken();
       if (token == null || token.isEmpty) {
-        errorMessage.value = "Unauthorized user";
+        if (retries > 0) {
+          debugPrint(
+            "fetchNearbyKitchens: token not ready, retrying in 500ms (retries left: $retries)",
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+          return fetchNearbyKitchens(retries: retries - 1);
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          errorMessage.value = "Unauthorized user";
+        });
         return;
       }
 
@@ -246,22 +250,28 @@ class AuthController extends GetxController {
 
         final KitchenResponse kitchenResponse = KitchenResponse.fromJson(data);
 
-        kitchens.assignAll(kitchenResponse.kitchens ?? []);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          kitchens.assignAll(kitchenResponse.kitchens ?? []);
+        });
       } else {
-        errorMessage.value = "Failed to load kitchens";
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          errorMessage.value = "Failed to load kitchens";
+        });
       }
     } catch (e) {
-      errorMessage.value = "Something went wrong";
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        errorMessage.value = "Something went wrong";
+      });
       debugPrint("KITCHEN API ERROR: $e");
     } finally {
-      isLoading.value = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        isLoading.value = false;
+      });
     }
   }
 
   // -- menu fetch model can be added here --
 
-  /// 📦 API DATA
-  /// 📦 API DATA
   final Rx<MenuResponse?> menuResponse = Rx<MenuResponse?>(null);
 
   /// 🗂️ EXPOSED LISTS
@@ -360,6 +370,9 @@ class AuthController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint("ADD TO CART SUCCESS: $data");
         Get.snackbar("Added to Cart", data["message"] ?? "Item added");
+
+        // Refresh cart so UI updates immediately
+        await fetchCart();
       } else {
         Get.snackbar("Cart Error", data["message"] ?? "Failed to add item");
         debugPrint("ADD TO CART FAILED: $data");
@@ -370,5 +383,232 @@ class AuthController extends GetxController {
     } finally {
       isAdding.value = false;
     }
+  }
+
+  //-----  Get Cart API
+
+  /// 🛒 CART RESPONSE
+  final Rx<CartResponse?> cartResponse = Rx<CartResponse?>(null);
+
+  /// 🧾 CART ITEMS (SAFE GETTER)
+  List<CartItem> get cartItems => cartResponse.value?.cart?.items ?? [];
+
+  /// 💰 TOTAL CALCULATIONS
+  int get itemTotal => cartItems.fold(0, (sum, e) => sum + (e.itemTotal ?? 0));
+
+  /// 📦 FETCH CART API
+  Future<void> fetchCart() async {
+    try {
+      // Schedule state updates after current frame to avoid marking widgets dirty
+      // while the framework is building (prevents "setState() called during build" errors).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        isLoading.value = true;
+        errorMessage.value = "";
+      });
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          errorMessage.value = "Unauthorized user";
+        });
+        return;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.GetCart));
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          cartResponse.value = CartResponse.fromJson(decoded);
+        });
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          errorMessage.value = "Failed to load cart";
+        });
+      }
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        errorMessage.value = "Something went wrong";
+      });
+      debugPrint("GET CART ERROR: $e");
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        isLoading.value = false;
+      });
+    }
+  }
+
+  /// ❌ REMOVE ITEM (LOCAL ONLY – UI SMOOTHNESS)
+  void removeItem(String menuItemId) {
+    final current = cartResponse.value;
+    if (current == null || current.cart?.items == null) return;
+
+    final updatedItems = current.cart!.items!
+        .where((e) => e.menuItemId != menuItemId)
+        .toList();
+
+    cartResponse.value = CartResponse(
+      success: current.success,
+      cart: CartData(
+        userId: current.cart!.userId,
+        kitchenId: current.cart!.kitchenId,
+        updatedAt: current.cart!.updatedAt,
+        items: updatedItems,
+      ),
+    );
+  }
+
+  /// ➕➖ UPDATE QTY (LOCAL ONLY)
+  void updateQuantity(String menuItemId, int qty) {
+    final current = cartResponse.value;
+    if (current == null || current.cart?.items == null) return;
+
+    final updatedItems = current.cart!.items!.map((item) {
+      if (item.menuItemId == menuItemId) {
+        final price = item.variant?.price ?? 0;
+        return CartItem(
+          menuItemId: item.menuItemId,
+          name: item.name,
+          variant: item.variant,
+          addons: item.addons,
+          quantity: qty,
+          customization: item.customization,
+          itemTotal:
+              price * qty +
+              (item.addons?.fold<int>(0, (s, a) => s + (a.price ?? 0)) ?? 0),
+        );
+      }
+      return item;
+    }).toList();
+
+    cartResponse.value = CartResponse(
+      success: current.success,
+      cart: CartData(
+        userId: current.cart!.userId,
+        kitchenId: current.cart!.kitchenId,
+        updatedAt: current.cart!.updatedAt,
+        items: updatedItems,
+      ),
+    );
+  }
+
+  // -- DELETE CART ITEM (API)
+  final RxList<String> removingItems = <String>[].obs;
+
+  Future<void> deleteCartItem({required String menuItemId}) async {
+    final kitchenId = cartResponse.value?.cart?.kitchenId;
+    if (kitchenId == null) {
+      Get.snackbar("Error", "Kitchen ID missing");
+      return;
+    }
+
+    try {
+      removingItems.add(menuItemId);
+
+      final item = cartResponse.value?.cart?.items?.firstWhere(
+        (e) => e.menuItemId == menuItemId,
+        orElse: () => CartItem(),
+      );
+
+      final variantLabel = item?.variant?.label ?? "Standard";
+      final addons = item?.addons?.map((a) => a.name ?? "").toList() ?? [];
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.cartItemdelete));
+
+      final response = await http.patch(
+        url,
+        headers: {
+          "Authorization": "Bearer ${TokenStorage.getAccessToken()}",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "kitchenId": kitchenId,
+          "menuItemId": menuItemId,
+          "variantLabel": variantLabel,
+          "addons": addons,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update UI immediately by removing the item locally
+        removeItem(menuItemId);
+
+        // Also refresh from server in background to ensure sync
+        fetchCart();
+
+        Get.snackbar("Removed", "Item removed from cart");
+      } else {
+        final data = jsonDecode(response.body);
+        Get.snackbar("Error", data["message"] ?? "Failed to remove item");
+      }
+    } catch (e) {
+      debugPrint("DELETE CART ITEM ERROR: $e");
+      Get.snackbar("Error", "Failed to remove item");
+    } finally {
+      removingItems.remove(menuItemId);
+    }
+  }
+
+  // -- get profile api
+
+  /// 👤 Profile Response
+  final Rx<UserProfileResponse?> profileResponse = Rx<UserProfileResponse?>(
+    null,
+  );
+
+  /// 👤 Shortcut getter
+  UserData? get user => profileResponse.value?.user;
+
+  /// 📡 FETCH PROFILE
+  Future<void> fetchProfile() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = "";
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        errorMessage.value = "Unauthorized user";
+        return;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Getprofile));
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+
+        profileResponse.value = UserProfileResponse.fromJson(decoded);
+
+        debugPrint("✅ PROFILE LOADED");
+      } else {
+        errorMessage.value = "Failed to load profile";
+        debugPrint("❌ PROFILE API ERROR: ${response.body}");
+      }
+    } catch (e) {
+      errorMessage.value = "Something went wrong";
+      debugPrint("❌ PROFILE EXCEPTION: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// 🔁 CLEAR PROFILE (OPTIONAL)
+  void clearProfile() {
+    profileResponse.value = null;
   }
 }

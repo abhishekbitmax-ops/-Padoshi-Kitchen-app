@@ -535,8 +535,8 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                 ),
-                onPressed: () {
-                  menuController.addToCart(
+                onPressed: () async {
+                  await menuController.addToCart(
                     kitchenId: menuController.menuResponse.value!.kitchen!.id!,
                     menuItemId: widget.item.id!,
                     variantLabel:
@@ -558,6 +558,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                     },
                   );
 
+                  // close sheet and navigate to cart after add+refresh complete
                   Navigator.pop(context);
                   Get.offAll(() => const RestaurantBottomNav(initialIndex: 2));
                 },

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
 import 'package:padoshi_kitchen/widgets/GetAddress.dart';
-import 'package:padoshi_kitchen/widgets/dummymodel.dart';
+import 'package:get/get.dart';
+import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
+import 'package:padoshi_kitchen/widgets/dummymodel.dart' as dm;
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -16,21 +18,21 @@ class _CartScreenState extends State<CartScreen>
   late Animation<Offset> _slide;
   late Animation<double> _fade;
 
-  int qty = 2;
+  final AuthController controller = Get.find<AuthController>();
+
   int deliveryMethod = 0; // 0 rider,1 third party,2 pickup
   int paymentMethod = 0; // 0 online,1 cod
 
-  int itemPrice = 200;
   int deliveryFee = 30;
   int tax = 18;
-  AddressModel? selectedAddress;
+  dm.AddressModel? selectedAddress;
 
-  int get itemTotal => cartItems.fold(0, (sum, e) => sum + (e.price * e.qty));
+  int get itemTotal => controller.itemTotal;
 
   int get grandTotal => itemTotal + deliveryFee + tax;
 
   Future<void> openAddressBottomSheet(BuildContext context) async {
-    final result = await showModalBottomSheet<AddressModel>(
+    final result = await showModalBottomSheet<dm.AddressModel>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -57,6 +59,11 @@ class _CartScreenState extends State<CartScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _fade = Tween<double>(begin: 0, end: 1).animate(_controller);
     _controller.forward();
+
+    // Fetch cart when screen initializes (post-frame to avoid rebuild conflicts)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchCart();
+    });
   }
 
   @override
@@ -106,25 +113,33 @@ class _CartScreenState extends State<CartScreen>
               opacity: _fade,
               child: SlideTransition(
                 position: _slide,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (cartItems.isEmpty)
-                      _emptyCartView()
-                    else ...[
-                      ...cartItems.map((e) => _cartItem(e)).toList(),
-                      const SizedBox(height: 16),
-                      _deliveryAddress(),
-                      const SizedBox(height: 16),
-                      _deliveryMethod(),
-                      const SizedBox(height: 16),
-                      _paymentMethod(),
-                      const SizedBox(height: 20),
-                      _billingDetails(),
-                      const SizedBox(height: 120),
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final items = controller.cartItems;
+
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (items.isEmpty)
+                        _emptyCartView()
+                      else ...[
+                        ...items.map((e) => _cartItem(e)).toList(),
+                        const SizedBox(height: 16),
+                        _deliveryAddress(),
+                        const SizedBox(height: 16),
+                        _deliveryMethod(),
+                        const SizedBox(height: 16),
+                        _paymentMethod(),
+                        const SizedBox(height: 20),
+                        _billingDetails(),
+                        const SizedBox(height: 120),
+                      ],
                     ],
-                  ],
-                ),
+                  );
+                }),
               ),
             ),
           ),
@@ -174,33 +189,40 @@ class _CartScreenState extends State<CartScreen>
           /// 🟢 CHECKOUT BUTTON (RIGHT)
           SizedBox(
             height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 26),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: () {
-                // TODO: Checkout / Payment flow
-              },
-              child: const Row(
-                children: [
-                  Text(
-                    "Checkout",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+            child: Obx(() {
+              final isEmpty = controller.cartItems.isEmpty;
+
+              return ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isEmpty ? Colors.grey : AppColors.primary,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_forward, size: 18, color: Colors.white),
-                ],
-              ),
-            ),
+                ),
+                onPressed: isEmpty
+                    ? null
+                    : () {
+                        // Checkout / Payment flow
+                        Get.snackbar("Checkout", "Proceeding to payment");
+                      },
+                child: const Row(
+                  children: [
+                    Text(
+                      "Checkout",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+                  ],
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -256,15 +278,18 @@ class _CartScreenState extends State<CartScreen>
   }
 
   /// 🧾 CART ITEM
-  Widget _cartItem(CartItem item) {
+  Widget _cartItem(item) {
+    final qty = item.quantity ?? 1;
+    final price = item.variant?.price ?? 0;
+
     return _card(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.network(
-              item.image,
+            child: Image.asset(
+              'assets/images/demo_one.jpg',
               height: 70,
               width: 70,
               fit: BoxFit.cover,
@@ -281,7 +306,7 @@ class _CartScreenState extends State<CartScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        item.name,
+                        item.name ?? "Item",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
@@ -294,7 +319,7 @@ class _CartScreenState extends State<CartScreen>
                 const SizedBox(height: 6),
 
                 Text(
-                  "₹${item.price}",
+                  "₹$price",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -311,18 +336,36 @@ class _CartScreenState extends State<CartScreen>
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    cartItems.remove(item);
-                  });
-                },
-                child: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                  size: 22,
-                ),
-              ),
+              Obx(() {
+                final removing =
+                    (item.menuItemId != null &&
+                    controller.removingItems.contains(item.menuItemId));
+
+                return InkWell(
+                  onTap: removing
+                      ? null
+                      : () {
+                          if (item.menuItemId != null) {
+                            controller.deleteCartItem(
+                              menuItemId: item.menuItemId!,
+                            );
+                          } else {
+                            Get.snackbar("Error", "Item id missing");
+                          }
+                        },
+                  child: removing
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 22,
+                        ),
+                );
+              }),
 
               _qtyControl(item),
             ],
@@ -381,7 +424,9 @@ class _CartScreenState extends State<CartScreen>
   }
 
   /// ➕➖ QTY
-  Widget _qtyControl(CartItem item) {
+  Widget _qtyControl(item) {
+    final currentQty = item.quantity ?? 1;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -392,19 +437,21 @@ class _CartScreenState extends State<CartScreen>
           IconButton(
             icon: const Icon(Icons.remove, size: 16),
             onPressed: () {
-              if (item.qty > 1) {
-                setState(() => item.qty--);
+              if (currentQty > 1 && item.menuItemId != null) {
+                controller.updateQuantity(item.menuItemId!, currentQty - 1);
               }
             },
           ),
           Text(
-            "${item.qty}",
+            "$currentQty",
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           IconButton(
             icon: const Icon(Icons.add, size: 16),
             onPressed: () {
-              setState(() => item.qty++);
+              if (item.menuItemId != null) {
+                controller.updateQuantity(item.menuItemId!, currentQty + 1);
+              }
             },
           ),
         ],
