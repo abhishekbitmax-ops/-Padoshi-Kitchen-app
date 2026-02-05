@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:padoshi_kitchen/Modules/Auth/view/Menuscreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Homescreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/cartscreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/profile.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
+import 'package:padoshi_kitchen/widgets/viewcart.dart';
 
 class RestaurantBottomNav extends StatefulWidget {
   final int initialIndex;
@@ -45,7 +45,14 @@ class _RestaurantBottomNavState extends State<RestaurantBottomNav> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: screens[_currentIndex],
+      body: Stack(
+        children: [
+          screens[_currentIndex],
+          // 🛒 Global ZomatoCartBar at bottom (hide on CartScreen)
+          if (_currentIndex != 2)
+            Positioned(bottom: 3, left: 0, right: 0, child: ZomatoCartBar()),
+        ],
+      ),
 
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 30),

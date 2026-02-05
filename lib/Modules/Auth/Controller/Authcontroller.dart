@@ -428,6 +428,8 @@ class AuthController extends GetxController {
         final decoded = jsonDecode(response.body);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           cartResponse.value = CartResponse.fromJson(decoded);
+          // 💾 SAVE CART DATA TO PERSISTENT STORAGE
+          TokenStorage.saveCart(jsonEncode(decoded));
         });
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -446,7 +448,21 @@ class AuthController extends GetxController {
     }
   }
 
-  /// ❌ REMOVE ITEM (LOCAL ONLY – UI SMOOTHNESS)
+  /// 📥 LOAD CART FROM PERSISTENT STORAGE
+  Future<void> loadCachedCart() async {
+    try {
+      final cachedCartJson = TokenStorage.getCart();
+      if (cachedCartJson != null && cachedCartJson.isNotEmpty) {
+        final decoded = jsonDecode(cachedCartJson);
+        cartResponse.value = CartResponse.fromJson(decoded);
+        debugPrint("Cart loaded from cache");
+      }
+    } catch (e) {
+      debugPrint("ERROR LOADING CACHED CART: $e");
+    }
+  }
+
+  ///  REMOVE ITEM (LOCAL ONLY – UI SMOOTHNESS)
   void removeItem(String menuItemId) {
     final current = cartResponse.value;
     if (current == null || current.cart?.items == null) return;
@@ -557,7 +573,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // -- get profile api
+  //// -- get profile api
 
   /// 👤 Profile Response
   final Rx<UserProfileResponse?> profileResponse = Rx<UserProfileResponse?>(
@@ -594,14 +610,14 @@ class AuthController extends GetxController {
 
         profileResponse.value = UserProfileResponse.fromJson(decoded);
 
-        debugPrint("✅ PROFILE LOADED");
+        debugPrint(" PROFILE LOADED");
       } else {
         errorMessage.value = "Failed to load profile";
-        debugPrint("❌ PROFILE API ERROR: ${response.body}");
+        debugPrint(" PROFILE API ERROR: ${response.body}");
       }
     } catch (e) {
       errorMessage.value = "Something went wrong";
-      debugPrint("❌ PROFILE EXCEPTION: $e");
+      debugPrint(" PROFILE EXCEPTION: $e");
     } finally {
       isLoading.value = false;
     }
@@ -610,5 +626,103 @@ class AuthController extends GetxController {
   /// 🔁 CLEAR PROFILE (OPTIONAL)
   void clearProfile() {
     profileResponse.value = null;
+  }
+
+  /// 🧹 CLEAR CART DATA (OPTIONAL)
+
+  // Clear  cart data (optional, can be used on logout)
+
+  //final RxList<String> removingItems = <String>[].obs;
+
+  Future<void> ClearCart({required String menuItemId}) async {
+    try {
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.cartItemdelete));
+
+      final response = await http.delete(
+        url,
+        headers: {"Authorization": "Bearer ${TokenStorage.getAccessToken()}"},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update UI immediately by removing the item locally
+        removeItem(menuItemId);
+
+        // Also refresh from server in background to ensure sync
+        fetchCart();
+
+        Get.snackbar("Removed", "Item removed from cart");
+      } else {
+        final data = jsonDecode(response.body);
+        Get.snackbar("Error", data["message"] ?? "Failed to remove item");
+      }
+    } catch (e) {
+      debugPrint("DELETE CART ITEM ERROR: $e");
+      Get.snackbar("Error", "Failed to remove item");
+    } finally {
+      removingItems.remove(menuItemId);
+    }
+  }
+
+  // ========== 🛍️ CHECKOUT API ==========
+
+  final Rx<CheckoutResponse?> checkoutResponse = Rx<CheckoutResponse?>(null);
+  final isCheckingOut = false.obs;
+
+  /// 🛒 CHECKOUT API (POST)
+  /// Sends delivery mode and gets pricing + delivery info
+  Future<bool> checkout({
+    required String deliveryMode, // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
+  }) async {
+    try {
+      isCheckingOut.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return false;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Checkout));
+
+      /// 🔥 REQUEST BODY (MATCHES YOUR API)
+      final body = {
+        "delivery": {
+          "mode": deliveryMode, // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
+        },
+      };
+
+      debugPrint("CHECKOUT REQUEST: $body");
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      debugPrint("CHECKOUT RESPONSE: $data");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Parse and store response
+        checkoutResponse.value = CheckoutResponse.fromJson(data);
+
+        Get.snackbar("Success", data["message"] ?? "Checkout successful");
+
+        return true;
+      } else {
+        Get.snackbar("Checkout Error", data["message"] ?? "Failed to checkout");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("CHECKOUT ERROR: $e");
+      Get.snackbar("Error", "Something went wrong: $e");
+      return false;
+    } finally {
+      isCheckingOut.value = false;
+    }
   }
 }

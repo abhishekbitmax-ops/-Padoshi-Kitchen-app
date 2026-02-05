@@ -5,11 +5,7 @@ class KitchenResponse {
   final int? count;
   final List<Kitchen>? kitchens;
 
-  KitchenResponse({
-    this.success,
-    this.count,
-    this.kitchens,
-  });
+  KitchenResponse({this.success, this.count, this.kitchens});
 
   factory KitchenResponse.fromJson(Map<String, dynamic> json) {
     return KitchenResponse(
@@ -76,10 +72,7 @@ class RestaurantInfo {
   RestaurantInfo({this.name, this.description});
 
   factory RestaurantInfo.fromJson(Map<String, dynamic> json) {
-    return RestaurantInfo(
-      name: json['name'],
-      description: json['description'],
-    );
+    return RestaurantInfo(name: json['name'], description: json['description']);
   }
 }
 
@@ -89,9 +82,7 @@ class LocationInfo {
   LocationInfo({this.societyName});
 
   factory LocationInfo.fromJson(Map<String, dynamic> json) {
-    return LocationInfo(
-      societyName: json['societyName'],
-    );
+    return LocationInfo(societyName: json['societyName']);
   }
 }
 
@@ -127,10 +118,7 @@ class OpeningHours {
   OpeningHours({this.open, this.close});
 
   factory OpeningHours.fromJson(Map<String, dynamic> json) {
-    return OpeningHours(
-      open: json['open'],
-      close: json['close'],
-    );
+    return OpeningHours(open: json['open'], close: json['close']);
   }
 }
 
@@ -162,11 +150,7 @@ class DeliveryPricing {
   final num? partnerRatePerKm;
   final num? perKmCharge;
 
-  DeliveryPricing({
-    this.baseFee,
-    this.partnerRatePerKm,
-    this.perKmCharge,
-  });
+  DeliveryPricing({this.baseFee, this.partnerRatePerKm, this.perKmCharge});
 
   factory DeliveryPricing.fromJson(Map<String, dynamic> json) {
     return DeliveryPricing(
@@ -181,10 +165,7 @@ class Serviceability {
   final bool? allowsPickup;
   final num? maxDeliveryRadiusKm;
 
-  Serviceability({
-    this.allowsPickup,
-    this.maxDeliveryRadiusKm,
-  });
+  Serviceability({this.allowsPickup, this.maxDeliveryRadiusKm});
 
   factory Serviceability.fromJson(Map<String, dynamic> json) {
     return Serviceability(
@@ -194,9 +175,7 @@ class Serviceability {
   }
 }
 
-
 // menu model can be added here if needed
-
 
 class MenuResponse {
   final bool? success;
@@ -204,12 +183,7 @@ class MenuResponse {
   final List<Category>? categories;
   final List<Item>? items;
 
-  MenuResponse({
-    this.success,
-    this.kitchen,
-    this.categories,
-    this.items,
-  });
+  MenuResponse({this.success, this.kitchen, this.categories, this.items});
 
   factory MenuResponse.fromJson(Map<String, dynamic> json) {
     return MenuResponse(
@@ -220,9 +194,7 @@ class MenuResponse {
       categories: (json['categories'] as List?)
           ?.map((e) => Category.fromJson(e))
           .toList(),
-      items: (json['items'] as List?)
-          ?.map((e) => Item.fromJson(e))
-          .toList(),
+      items: (json['items'] as List?)?.map((e) => Item.fromJson(e)).toList(),
     );
   }
 }
@@ -232,11 +204,7 @@ class KitchenInfo {
   final String? name;
   final bool? isOnline;
 
-  KitchenInfo({
-    this.id,
-    this.name,
-    this.isOnline,
-  });
+  KitchenInfo({this.id, this.name, this.isOnline});
 
   factory KitchenInfo.fromJson(Map<String, dynamic> json) {
     return KitchenInfo(
@@ -283,8 +251,7 @@ class Category {
       createdBy: json['createdBy'],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
-      image:
-          json['image'] != null ? ImageData.fromJson(json['image']) : null,
+      image: json['image'] != null ? ImageData.fromJson(json['image']) : null,
     );
   }
 }
@@ -296,10 +263,7 @@ class ImageData {
   ImageData({this.publicId, this.url});
 
   factory ImageData.fromJson(Map<String, dynamic> json) {
-    return ImageData(
-      publicId: json['public_id'],
-      url: json['url'],
-    );
+    return ImageData(publicId: json['public_id'], url: json['url']);
   }
 }
 
@@ -333,7 +297,9 @@ class Item {
       description: json['description'],
       category: json['category'],
       foodType: json['foodType'],
-      image: json['image'] != null       // ✅ MAP IMAGE
+      image:
+          json['image'] !=
+              null // ✅ MAP IMAGE
           ? ImageData.fromJson(json['image'])
           : null,
       customization: json['customization'] != null
@@ -342,24 +308,17 @@ class Item {
       variants: (json['variants'] as List?)
           ?.map((e) => Variant.fromJson(e))
           .toList(),
-      addons: (json['addons'] as List?)
-          ?.map((e) => Addon.fromJson(e))
-          .toList(),
+      addons: (json['addons'] as List?)?.map((e) => Addon.fromJson(e)).toList(),
     );
   }
 }
-
 
 class Customization {
   final bool? spiceLevel;
   final bool? jainAvailable;
   final bool? notesAllowed;
 
-  Customization({
-    this.spiceLevel,
-    this.jainAvailable,
-    this.notesAllowed,
-  });
+  Customization({this.spiceLevel, this.jainAvailable, this.notesAllowed});
 
   factory Customization.fromJson(Map<String, dynamic> json) {
     return Customization(
@@ -405,12 +364,7 @@ class Addon {
   final bool? isAvailable;
   final String? id;
 
-  Addon({
-    this.name,
-    this.price,
-    this.isAvailable,
-    this.id,
-  });
+  Addon({this.name, this.price, this.isAvailable, this.id});
 
   factory Addon.fromJson(Map<String, dynamic> json) {
     return Addon(
@@ -422,10 +376,7 @@ class Addon {
   }
 }
 
-
 // Cart model can be added here if needed
-
-
 
 class CartResponse {
   final bool? success;
@@ -447,12 +398,7 @@ class CartData {
   final List<CartItem>? items;
   final String? updatedAt;
 
-  CartData({
-    this.userId,
-    this.kitchenId,
-    this.items,
-    this.updatedAt,
-  });
+  CartData({this.userId, this.kitchenId, this.items, this.updatedAt});
 
   factory CartData.fromJson(Map<String, dynamic> json) {
     return CartData(
@@ -489,8 +435,9 @@ class CartItem {
     return CartItem(
       menuItemId: json['menuItemId'],
       name: json['name'],
-      variant:
-          json['variant'] != null ? CartVariant.fromJson(json['variant']) : null,
+      variant: json['variant'] != null
+          ? CartVariant.fromJson(json['variant'])
+          : null,
       addons: (json['addons'] as List?)
           ?.map((e) => CartAddon.fromJson(e))
           .toList(),
@@ -510,10 +457,7 @@ class CartVariant {
   CartVariant({this.label, this.price});
 
   factory CartVariant.fromJson(Map<String, dynamic> json) {
-    return CartVariant(
-      label: json['label'],
-      price: json['price'],
-    );
+    return CartVariant(label: json['label'], price: json['price']);
   }
 }
 
@@ -524,10 +468,7 @@ class CartAddon {
   CartAddon({this.name, this.price});
 
   factory CartAddon.fromJson(Map<String, dynamic> json) {
-    return CartAddon(
-      name: json['name'],
-      price: json['price'],
-    );
+    return CartAddon(name: json['name'], price: json['price']);
   }
 }
 
@@ -536,11 +477,7 @@ class CartCustomization {
   final bool? isJain;
   final String? notes;
 
-  CartCustomization({
-    this.spiceLevel,
-    this.isJain,
-    this.notes,
-  });
+  CartCustomization({this.spiceLevel, this.isJain, this.notes});
 
   factory CartCustomization.fromJson(Map<String, dynamic> json) {
     return CartCustomization(
@@ -550,7 +487,6 @@ class CartCustomization {
     );
   }
 }
-
 
 //  Getprofile model can be added here if needed
 
@@ -645,6 +581,60 @@ class GeoLocation {
       coordinates: (json['coordinates'] as List?)
           ?.map((e) => (e as num).toDouble())
           .toList(),
+    );
+  }
+}
+
+// ========== 🛍️ CHECKOUT MODELS ==========
+
+class CheckoutResponse {
+  final bool? success;
+  final Pricing? pricing;
+  final DeliveryInfo? delivery;
+
+  CheckoutResponse({this.success, this.pricing, this.delivery});
+
+  factory CheckoutResponse.fromJson(Map<String, dynamic> json) {
+    return CheckoutResponse(
+      success: json['success'],
+      pricing: json['pricing'] != null
+          ? Pricing.fromJson(json['pricing'])
+          : null,
+      delivery: json['delivery'] != null
+          ? DeliveryInfo.fromJson(json['delivery'])
+          : null,
+    );
+  }
+}
+
+class Pricing {
+  final int? foodTotal;
+  final int? deliveryCharge;
+  final int? finalAmount;
+
+  Pricing({this.foodTotal, this.deliveryCharge, this.finalAmount});
+
+  factory Pricing.fromJson(Map<String, dynamic> json) {
+    return Pricing(
+      foodTotal: json['foodTotal'],
+      deliveryCharge: json['deliveryCharge'],
+      finalAmount: json['finalAmount'],
+    );
+  }
+}
+
+class DeliveryInfo {
+  final String? mode; // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
+  final String? settlementOwner;
+  final num? distanceKm;
+
+  DeliveryInfo({this.mode, this.settlementOwner, this.distanceKm});
+
+  factory DeliveryInfo.fromJson(Map<String, dynamic> json) {
+    return DeliveryInfo(
+      mode: json['mode'],
+      settlementOwner: json['settlementOwner'],
+      distanceKm: json['distanceKm'],
     );
   }
 }

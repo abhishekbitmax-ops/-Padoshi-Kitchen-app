@@ -14,6 +14,8 @@ class ApiEndpoint {
   static const String Getprofile = "/profile/me";
   static const String cartItemdelete = "/cart";
 
+  static const String Checkout = "/cart/checkout/preview";
+
   //  Helper — automatically combines base URL + endpoint
   static String getUrl(String endpoint) {
     return "$baseUrl$endpoint";

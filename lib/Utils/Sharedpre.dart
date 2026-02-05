@@ -62,4 +62,23 @@ class TokenStorage {
   static Future<void> forceLogout() async {
     await clearTokens();
   }
+
+  // ===================== CART PERSISTENCE =====================
+
+  static const String _cartKey = "CART_DATA";
+
+  /// 💾 SAVE CART DATA
+  static Future<void> saveCart(String cartJson) async {
+    await _box.write(_cartKey, cartJson);
+  }
+
+  /// 📥 GET CART DATA
+  static String? getCart() {
+    return _box.read(_cartKey);
+  }
+
+  /// 🗑️ CLEAR CART DATA
+  static Future<void> clearCart() async {
+    await _box.remove(_cartKey);
+  }
 }

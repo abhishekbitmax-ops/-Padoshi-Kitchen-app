@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/OrderInvoiceScreen.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
 import 'package:padoshi_kitchen/widgets/GetAddress.dart';
 import 'package:get/get.dart';
@@ -29,7 +30,12 @@ class _CartScreenState extends State<CartScreen>
 
   int get itemTotal => controller.itemTotal;
 
-  int get grandTotal => itemTotal + deliveryFee + tax;
+  int get grandTotal {
+    if (controller.cartItems.isEmpty) {
+      return 0; // No charges when cart is empty
+    }
+    return itemTotal + deliveryFee + tax;
+  }
 
   Future<void> openAddressBottomSheet(BuildContext context) async {
     final result = await showModalBottomSheet<dm.AddressModel>(
@@ -77,7 +83,6 @@ class _CartScreenState extends State<CartScreen>
     return Scaffold(
       bottomNavigationBar: _checkoutButton(),
 
-      // backgroundColor: const Color(0xFFF8F9FB),
       body: Column(
         children: [
           /// 🔝 HEADER
@@ -95,13 +100,55 @@ class _CartScreenState extends State<CartScreen>
                 bottomRight: Radius.circular(28),
               ),
             ),
-            child: const Text(
-              "Checkout 🛒",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Checkout 🛒",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                /// 🗑️ CLEAR CART BUTTON
+                Obx(() {
+                  final isEmpty = controller.cartItems.isEmpty;
+
+                  return ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isEmpty ? Colors.grey : Colors.red,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: isEmpty
+                        ? null
+                        : () {
+                            controller.ClearCart(menuItemId: '');
+                          },
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      "Clear Cart",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
 
@@ -170,15 +217,17 @@ class _CartScreenState extends State<CartScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                "Total Amount",
+                "Grand Total",
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 2),
-              Text(
-                "₹$grandTotal",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Obx(
+                () => Text(
+                  "₹${grandTotal}",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -205,7 +254,7 @@ class _CartScreenState extends State<CartScreen>
                     ? null
                     : () {
                         // Checkout / Payment flow
-                        Get.snackbar("Checkout", "Proceeding to payment");
+                        Get.to(() => OrderInvoiceScreen());
                       },
                 child: const Row(
                   children: [

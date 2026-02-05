@@ -4,6 +4,7 @@ import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Model/Model.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
+import 'package:padoshi_kitchen/widgets/viewcart.dart';
 
 class Menuscreen extends StatefulWidget {
   const Menuscreen({super.key});
@@ -63,245 +64,262 @@ class _MenuscreenState extends State<Menuscreen> {
       ),
 
       body: SafeArea(
-        child: Obx(() {
-          final menu = menuController.menuResponse.value;
+        child: Column(
+          children: [
+            Expanded(
+              child: Obx(() {
+                final menu = menuController.menuResponse.value;
 
-          if (menu == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                if (menu == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final categories = menuController.categories;
-          final items = menuController.items;
-          final selectedCategoryId = menuController.selectedCategoryId.value;
+                final categories = menuController.categories;
+                final items = menuController.items;
+                final selectedCategoryId =
+                    menuController.selectedCategoryId.value;
 
-          if (items.isEmpty) {
-            return const Center(child: Text("No items available"));
-          }
+                if (items.isEmpty) {
+                  return const Center(child: Text("No items available"));
+                }
 
-          final filteredItems = items.where((item) {
-            final matchCategory =
-                selectedCategoryId.isEmpty ||
-                item.category == selectedCategoryId;
+                final filteredItems = items.where((item) {
+                  final matchCategory =
+                      selectedCategoryId.isEmpty ||
+                      item.category == selectedCategoryId;
 
-            final matchFood =
-                foodFilter == "all" ||
-                (foodFilter == "veg" && item.foodType == "VEG") ||
-                (foodFilter == "nonveg" && item.foodType != "VEG");
+                  final matchFood =
+                      foodFilter == "all" ||
+                      (foodFilter == "veg" && item.foodType == "VEG") ||
+                      (foodFilter == "nonveg" && item.foodType != "VEG");
 
-            return matchCategory && matchFood;
-          }).toList();
+                  return matchCategory && matchFood;
+                }).toList();
 
-          return Row(
-            children: [
-              /// 🟠 CATEGORY PANEL
-              Container(
-                width: 110,
-                color: Colors.white,
-                child: ListView.builder(
-                  itemCount: categories.length,
-                  itemBuilder: (_, index) {
-                    final cat = categories[index];
-                    final isSelected =
-                        menuController.selectedCategoryId.value == cat.id;
+                return Row(
+                  children: [
+                    /// 🟠 CATEGORY PANEL
+                    Container(
+                      width: 110,
+                      color: Colors.white,
+                      child: ListView.builder(
+                        itemCount: categories.length,
+                        itemBuilder: (_, index) {
+                          final cat = categories[index];
+                          final isSelected =
+                              menuController.selectedCategoryId.value == cat.id;
 
-                    return InkWell(
-                      onTap: () {
-                        menuController.selectedCategoryId.value = cat.id ?? "";
-                      },
+                          return InkWell(
+                            onTap: () {
+                              menuController.selectedCategoryId.value =
+                                  cat.id ?? "";
+                            },
 
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 6,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: isSelected
-                              ? const LinearGradient(
-                                  colors: [
-                                    AppColors.primary,
-                                    AppColors.background,
-                                  ],
-                                )
-                              : null,
-                          border: Border.all(
-                            color: isSelected
-                                ? Colors.transparent
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: Colors.white,
-                              child: ClipOval(
-                                child: Image.network(
-                                  cat.image?.url ??
-                                      "https://cdn-icons-png.flaticon.com/512/3075/3075977.png",
-                                  height: 40,
-                                  width: 40,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.fastfood),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 6,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: isSelected
+                                    ? const LinearGradient(
+                                        colors: [
+                                          AppColors.primary,
+                                          AppColors.background,
+                                        ],
+                                      )
+                                    : null,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : Colors.grey.shade300,
                                 ),
                               ),
-                            ),
+                              child: Column(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: Colors.white,
+                                    child: ClipOval(
+                                      child: Image.network(
+                                        cat.image?.url ??
+                                            "https://cdn-icons-png.flaticon.com/512/3075/3075977.png",
+                                        height: 40,
+                                        width: 40,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(Icons.fastfood),
+                                      ),
+                                    ),
+                                  ),
 
-                            const SizedBox(height: 6),
-                            Text(
-                              cat.name ?? "",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.black87,
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    cat.name ?? "",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    /// 🟢 ITEMS
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _filterButton("Veg", "veg"),
+                                const SizedBox(width: 8),
+                                _filterButton("Non-Veg", "nonveg"),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: filteredItems.length,
+                                itemBuilder: (_, index) {
+                                  final item = filteredItems[index];
+
+                                  Variant? defaultVariant;
+                                  if (item.variants != null) {
+                                    for (final v in item.variants!) {
+                                      if (v.isDefault == true) {
+                                        defaultVariant = v;
+                                        break;
+                                      }
+                                    }
+                                  }
+
+                                  final price = defaultVariant?.price ?? 0;
+                                  final itemKey = item.id ?? index.toString();
+                                  double _addonsSum = 0;
+                                  if (item.addons != null) {
+                                    final selected =
+                                        _selectedAddons[itemKey] ?? <String>{};
+                                    for (final a in item.addons!) {
+                                      if (selected.contains(a.id)) {
+                                        _addonsSum += (a.price ?? 0).toDouble();
+                                      }
+                                    }
+                                  }
+                                  final totalPrice = price + _addonsSum;
+
+                                  final itemImage =
+                                      item.image ??
+                                      _getItemImage(item, categories);
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            child: Image.network(
+                                              itemImage?.url ??
+                                                  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+                                              height: 140,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Icon(
+                                                    Icons.fastfood,
+                                                    size: 80,
+                                                  ),
+                                            ),
+                                          ),
+
+                                          Text(
+                                            item.name ?? "",
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.description ?? "",
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+
+                                          Row(
+                                            children: [
+                                              Text(
+                                                "₹$totalPrice",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              InkWell(
+                                                onTap: () => _openBottomSheet(
+                                                  item,
+                                                  itemImage,
+                                                  initialSelected:
+                                                      _selectedAddons[itemKey],
+                                                ),
+                                                child: _addButton(),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ],
+                );
+              }),
+            ),
 
-              /// 🟢 ITEMS
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          _filterButton("Veg", "veg"),
-                          const SizedBox(width: 8),
-                          _filterButton("Non-Veg", "nonveg"),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: filteredItems.length,
-                          itemBuilder: (_, index) {
-                            final item = filteredItems[index];
-
-                            Variant? defaultVariant;
-                            if (item.variants != null) {
-                              for (final v in item.variants!) {
-                                if (v.isDefault == true) {
-                                  defaultVariant = v;
-                                  break;
-                                }
-                              }
-                            }
-
-                            final price = defaultVariant?.price ?? 0;
-                            final itemKey = item.id ?? index.toString();
-                            double _addonsSum = 0;
-                            if (item.addons != null) {
-                              final selected =
-                                  _selectedAddons[itemKey] ?? <String>{};
-                              for (final a in item.addons!) {
-                                if (selected.contains(a.id)) {
-                                  _addonsSum += (a.price ?? 0).toDouble();
-                                }
-                              }
-                            }
-                            final totalPrice = price + _addonsSum;
-
-                            final itemImage =
-                                item.image ?? _getItemImage(item, categories);
-
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.grey.shade200),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Image.network(
-                                        itemImage?.url ??
-                                            "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
-                                        height: 140,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const Icon(
-                                              Icons.fastfood,
-                                              size: 80,
-                                            ),
-                                      ),
-                                    ),
-
-                                    Text(
-                                      item.name ?? "",
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.description ?? "",
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "₹$totalPrice",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        InkWell(
-                                          onTap: () => _openBottomSheet(
-                                            item,
-                                            itemImage,
-                                            initialSelected:
-                                                _selectedAddons[itemKey],
-                                          ),
-                                          child: _addButton(),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        }),
+            /// 🛒 CART BAR AT BOTTOM
+            ZomatoCartBar(),
+          ],
+        ),
       ),
     );
   }
@@ -398,6 +416,7 @@ class _AddItemSheet extends StatefulWidget {
 class _AddItemSheetState extends State<_AddItemSheet> {
   int qty = 1;
   Set<String> selectedAddons = {};
+  bool isLoading = false;
   final AuthController menuController = Get.find<AuthController>();
 
   @override
@@ -535,38 +554,65 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                 ),
-                onPressed: () async {
-                  await menuController.addToCart(
-                    kitchenId: menuController.menuResponse.value!.kitchen!.id!,
-                    menuItemId: widget.item.id!,
-                    variantLabel:
-                        widget.item.variants
-                            ?.firstWhereOrNull((v) => v.isDefault == true)
-                            ?.label ??
-                        "Full",
-                    quantity: qty,
-                    addonNames:
-                        widget.item.addons
-                            ?.where((a) => selectedAddons.contains(a.id))
-                            .map((a) => a.name!)
-                            .toList() ??
-                        [],
-                    customization: {
-                      "spiceLevel": "Medium",
-                      "isJain": false,
-                      "notes": "Less oil please",
-                    },
-                  );
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        setState(() => isLoading = true);
 
-                  // close sheet and navigate to cart after add+refresh complete
-                  Navigator.pop(context);
-                  Get.offAll(() => const RestaurantBottomNav(initialIndex: 2));
-                },
+                        try {
+                          await menuController.addToCart(
+                            kitchenId:
+                                menuController.menuResponse.value!.kitchen!.id!,
+                            menuItemId: widget.item.id!,
+                            variantLabel:
+                                widget.item.variants
+                                    ?.firstWhereOrNull(
+                                      (v) => v.isDefault == true,
+                                    )
+                                    ?.label ??
+                                "Full",
+                            quantity: qty,
+                            addonNames:
+                                widget.item.addons
+                                    ?.where(
+                                      (a) => selectedAddons.contains(a.id),
+                                    )
+                                    .map((a) => a.name!)
+                                    .toList() ??
+                                [],
+                            customization: {
+                              "spiceLevel": "Medium",
+                              "isJain": false,
+                              "notes": "Less oil please",
+                            },
+                          );
 
-                child: Text(
-                  "ADD TO CART  •  ₹$totalPrice",
-                  style: const TextStyle(color: Colors.white),
-                ),
+                          // close sheet and navigate to cart after add+refresh complete
+                          Navigator.pop(context);
+                          // Get.offAll(
+                          //   () => const RestaurantBottomNav(initialIndex: 2),
+                          // );
+                        } catch (e) {
+                          Get.snackbar("Error", "Failed to add item to cart");
+                        } finally {
+                          setState(() => isLoading = false);
+                        }
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        "ADD TO CART  •  ₹$totalPrice",
+                        style: const TextStyle(color: Colors.white),
+                      ),
               ),
             ),
           ),
