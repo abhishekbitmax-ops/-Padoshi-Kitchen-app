@@ -608,14 +608,14 @@ class CheckoutResponse {
 }
 
 class Pricing {
-  final int? gstAmount;
-  final int? gstPercent;
-  final int? platformFee;
-  final int? itemTotal;
-  final int? grandTotalWithoutDelivery;
-  final int? foodTotal;
-  final int? deliveryCharge;
-  final int? finalAmount;
+  final num? gstAmount;
+  final num? gstPercent;
+  final num? platformFee;
+  final num? itemTotal;
+  final num? grandTotalWithoutDelivery;
+  final num? foodTotal;
+  final num? deliveryCharge;
+  final num? finalAmount;
 
   Pricing({
     this.gstAmount,

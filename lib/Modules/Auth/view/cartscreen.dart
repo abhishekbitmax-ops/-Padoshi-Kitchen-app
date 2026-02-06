@@ -5,6 +5,7 @@ import 'package:padoshi_kitchen/widgets/GetAddress.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Model/Addressmodel.dart';
+import 'package:padoshi_kitchen/widgets/Customloader.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -81,8 +82,10 @@ class _CartScreenState extends State<CartScreen>
     return Scaffold(
       bottomNavigationBar: _checkoutButton(),
 
-      body: Column(
+      body: Stack(
         children: [
+          Column(
+            children: [
           /// 🔝 HEADER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
@@ -188,6 +191,13 @@ class _CartScreenState extends State<CartScreen>
               ),
             ),
           ),
+            ],
+          ),
+          Obx(
+            () => controller.isCheckingOut.value
+                ? const CustomLoader(text: "Checking out...")
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -238,8 +248,9 @@ class _CartScreenState extends State<CartScreen>
             height: 48,
             child: Obx(() {
               final isEmpty = controller.cartItems.isEmpty;
+              final isCheckingOut = controller.isCheckingOut.value;
 
-              return ElevatedButton(
+                return ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isEmpty ? Colors.grey : AppColors.primary,
                   elevation: 0,
@@ -278,8 +289,9 @@ class _CartScreenState extends State<CartScreen>
                             arguments: {
                               "address": selectedAddress,
                               "mode": mode,
-                              "paymentMode":
-                                  paymentMethod == 0 ? "ONLINE" : "COD",
+                              "paymentMode": paymentMethod == 0
+                                  ? "ONLINE"
+                                  : "COD",
                             },
                           );
                         }
@@ -350,60 +362,74 @@ class _CartScreenState extends State<CartScreen>
   Widget _cartItem(item) {
     final qty = item.quantity ?? 1;
     final price = item.variant?.price ?? 0;
+    final itemTotal = item.itemTotal ?? (price * qty);
 
-    return _card(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBFB),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF2D4D4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Image.asset(
               'assets/images/demo_one.jpg',
-              height: 70,
-              width: 70,
+              height: 66,
+              width: 66,
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
 
-          /// ITEM INFO
+          /// ITEM INFO + QTY
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        item.name ?? "Item",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
+                    Text(
+                      item.name ?? "Item",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      "₹$price",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.green,
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  "₹$price",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
+                const SizedBox(height: 10),
+                _qtyControl(item),
               ],
             ),
           ),
 
           const SizedBox(width: 8),
 
-          /// 🗑️ DELETE ICON
+          /// RIGHT SIDE (DELETE + TOTAL)
           Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Obx(() {
                 final removing =
@@ -430,17 +456,22 @@ class _CartScreenState extends State<CartScreen>
                         )
                       : const Icon(
                           Icons.delete_outline,
-                          color: Colors.red,
-                          size: 22,
+                          color: Colors.redAccent,
+                          size: 24,
                         ),
                 );
               }),
-
-              _qtyControl(item),
+              const SizedBox(height: 22),
+              Text(
+                "₹$itemTotal",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF8B0000),
+                ),
+              ),
             ],
           ),
-
-          /// QTY CONTROL
         ],
       ),
     );
@@ -497,31 +528,54 @@ class _CartScreenState extends State<CartScreen>
     final currentQty = item.quantity ?? 1;
 
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: const Color(0xFFFFF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE8C9C9)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16),
-            onPressed: () {
+          InkWell(
+            onTap: () {
               if (currentQty > 1 && item.menuItemId != null) {
                 controller.updateQuantity(item.menuItemId!, currentQty - 1);
               }
             },
+            child: Container(
+              height: 30,
+              width: 30,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFDADA),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.remove, size: 16, color: Colors.red),
+            ),
           ),
+          const SizedBox(width: 12),
           Text(
             "$currentQty",
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16),
-            onPressed: () {
+          const SizedBox(width: 12),
+          InkWell(
+            onTap: () {
               if (item.menuItemId != null) {
                 controller.updateQuantity(item.menuItemId!, currentQty + 1);
               }
             },
+            child: Container(
+              height: 30,
+              width: 30,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFFDFF5E5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, size: 16, color: Colors.green),
+            ),
           ),
         ],
       ),

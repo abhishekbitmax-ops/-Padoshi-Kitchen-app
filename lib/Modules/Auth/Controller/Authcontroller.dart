@@ -17,6 +17,7 @@ import 'package:path/path.dart' as path;
 class AuthController extends GetxController {
   final isLoading = false.obs;
   final isAddressLoading = false.obs;
+  final isPlacingOrder = false.obs;
   final RxString selectedCategoryId = "".obs;
 
   // @override
@@ -933,6 +934,67 @@ class AuthController extends GetxController {
       return false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // ========== 🧾 PLACE ORDER API ==========
+  final Rx<Map<String, dynamic>?> placeOrderResponse =
+      Rx<Map<String, dynamic>?>(null);
+
+  Future<Map<String, dynamic>?> placeOrder({
+    required String deliveryMode,
+    String? addressId,
+    required String paymentMethod, // COD / ONLINE
+  }) async {
+    try {
+      isPlacingOrder.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return null;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.PlaceOrder));
+
+      final delivery = {"mode": deliveryMode};
+      if (deliveryMode != "SELF_PICKUP" &&
+          addressId != null &&
+          addressId.isNotEmpty) {
+        delivery["addressId"] = addressId;
+      }
+
+      final body = {
+        "delivery": delivery,
+        "payment": {"method": paymentMethod},
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint("ORDER PLACED: $data");
+        placeOrderResponse.value = data;
+
+        return data;
+      } else {
+        Get.snackbar("Error", data["message"] ?? "Failed to place order");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("PLACE ORDER ERROR: $e");
+      Get.snackbar("Error", "Something went wrong");
+      return null;
+    } finally {
+      isPlacingOrder.value = false;
     }
   }
 }

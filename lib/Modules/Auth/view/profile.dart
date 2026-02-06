@@ -23,36 +23,35 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   final AuthController profileController = Get.find<AuthController>();
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  /// 🎯 MATCH STATUS BAR WITH HEADER
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: AppColors.primary,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark, // iOS support
-    ),
-  );
+    /// 🎯 MATCH STATUS BAR WITH HEADER
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: AppColors.primary,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark, // iOS support
+      ),
+    );
 
-  profileController.fetchProfile();
+    profileController.fetchProfile();
 
-  _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 500),
-  );
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
 
-  _slide = Tween<Offset>(
-    begin: const Offset(0, 0.15),
-    end: Offset.zero,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-  _fade = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _fade = Tween<double>(begin: 0, end: 1).animate(_controller);
 
-  _controller.forward();
-}
-
+    _controller.forward();
+  }
 
   @override
   void dispose() {
@@ -66,6 +65,7 @@ void initState() {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       body: Obx(() {
@@ -83,124 +83,140 @@ void initState() {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               /// 🔝 HEADER
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 50, 20, 32),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.background],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+              AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  statusBarBrightness: Brightness.dark,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// TOP ROW
-                    Row(
-                      children: [
-                        const Text(
-                          "My Profile",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(20, topInset + 20, 20, 32),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primary, AppColors.background],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// TOP ROW
+                      Row(
+                        children: [
+                          const Text(
+                            "My Profile",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () {
-                            Get.to(() => const EditProfileScreen())?.then((_) {
-                              profileController.fetchProfile();
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.edit, size: 16, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text(
-                                  "Edit",
-                                  style: TextStyle(
+                          const Spacer(),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              Get.to(() => const EditProfileScreen())?.then((
+                                _,
+                              ) {
+                                profileController.fetchProfile();
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.18),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    size: 16,
                                     color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    "Edit",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 26),
+
+                      /// PROFILE CARD
+                      Row(
+                        children: [
+                          /// AVATAR
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.background,
+                                ],
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 32,
+                              backgroundImage: NetworkImage(
+                                user?.profileImage ??
+                                    "https://i.pravatar.cc/150?img=3",
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 16),
+
+                          /// USER INFO
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.fullName ?? "—",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  user?.mobile != null
+                                      ? "+91 ${user!.mobile}"
+                                      : "—",
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    /// PROFILE CARD
-                    Row(
-                      children: [
-                        /// AVATAR
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [AppColors.primary, AppColors.background],
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 32,
-                            backgroundImage: NetworkImage(
-                              user?.profileImage ??
-                                  "https://i.pravatar.cc/150?img=3",
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        /// USER INFO
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.fullName ?? "—",
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                user?.mobile != null
-                                    ? "+91 ${user!.mobile}"
-                                    : "—",
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
