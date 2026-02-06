@@ -1,20 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
+import 'package:padoshi_kitchen/widgets/CurrentMapfetch.dart';
 
 class AddAddressScreen extends StatefulWidget {
-  const AddAddressScreen({super.key});
+  const AddAddressScreen({
+    super.key,
+    this.addressId,
+    this.initialLabel,
+    this.initialAddressLine,
+    this.initialSocietyName,
+    this.initialIsDefault,
+    this.initialLat,
+    this.initialLng,
+  });
+
+  final String? addressId;
+  final String? initialLabel;
+  final String? initialAddressLine;
+  final String? initialSocietyName;
+  final bool? initialIsDefault;
+  final double? initialLat;
+  final double? initialLng;
 
   @override
   State<AddAddressScreen> createState() => _AddAddressScreenState();
 }
 
 class _AddAddressScreenState extends State<AddAddressScreen> {
-  final TextEditingController nameCtrl = TextEditingController();
-  final TextEditingController phoneCtrl = TextEditingController();
   final TextEditingController addressCtrl = TextEditingController();
   final TextEditingController landmarkCtrl = TextEditingController();
 
   int addressType = 0; // 0 home, 1 work, 2 other
+  bool isDefault = false;
+  double? selectedLat;
+  double? selectedLng;
+
+  final AuthController controller = Get.put(AuthController());
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialAddressLine != null) {
+      addressCtrl.text = widget.initialAddressLine!;
+    }
+    if (widget.initialSocietyName != null) {
+      landmarkCtrl.text = widget.initialSocietyName!;
+    }
+    if (widget.initialLabel != null) {
+      final label = widget.initialLabel!.toLowerCase();
+      if (label == "work") {
+        addressType = 1;
+      } else if (label == "other") {
+        addressType = 2;
+      } else {
+        addressType = 0;
+      }
+    }
+    if (widget.initialIsDefault != null) {
+      isDefault = widget.initialIsDefault!;
+    }
+    selectedLat = widget.initialLat;
+    selectedLng = widget.initialLng;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,29 +115,63 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   child: Column(
                     children: [
                       _inputField(
-                        controller: nameCtrl,
-                        label: "Full Name",
-                        icon: Icons.person_outline,
-                      ),
-                      const SizedBox(height: 14),
-                      _inputField(
-                        controller: phoneCtrl,
-                        label: "Phone Number",
-                        icon: Icons.phone_outlined,
-                        keyboard: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 14),
-                      _inputField(
                         controller: addressCtrl,
-                        label: "Complete Address",
+                        label: "Address Line",
                         icon: Icons.location_on_outlined,
                         maxLines: 3,
                       ),
                       const SizedBox(height: 14),
                       _inputField(
                         controller: landmarkCtrl,
-                        label: "Landmark (Optional)",
+                        label: "Society / Landmark (Optional)",
                         icon: Icons.map_outlined,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                /// ✅ DEFAULT ADDRESS
+                _card(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Set as default",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Switch(
+                        value: isDefault,
+                        activeColor: AppColors.primary,
+                        onChanged: (val) => setState(() => isDefault = val),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                /// 📍 SELECT LOCATION
+                _card(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.my_location,
+                        color: AppColors.background,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          selectedLat != null && selectedLng != null
+                              ? "Location selected"
+                              : "Select location on map",
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _openLocationPicker,
+                        child: const Text("Choose"),
                       ),
                     ],
                   ),
@@ -137,10 +221,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: () {
-              // TODO: save address logic
-              Navigator.pop(context);
-            },
+            onPressed: _submitAddress,
             child: const Text(
               "Save Address",
               style: TextStyle(
@@ -162,14 +243,18 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     required IconData icon,
     int maxLines = 1,
     TextInputType keyboard = TextInputType.text,
+    bool readOnly = false,
+    Widget? suffix,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboard,
       maxLines: maxLines,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.background),
+        suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
@@ -178,6 +263,62 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         ),
       ),
     );
+  }
+
+  String _labelFromType() {
+    switch (addressType) {
+      case 1:
+        return "Work";
+      case 2:
+        return "Other";
+      default:
+        return "Home";
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final result =
+        await Get.to(() => const DeliveryLocationScreen(returnResult: true));
+    if (result is Map) {
+      setState(() {
+        selectedLat = result["lat"] as double?;
+        selectedLng = result["lng"] as double?;
+      });
+    }
+  }
+
+  Future<void> _submitAddress() async {
+    if (addressCtrl.text.trim().isEmpty) {
+      Get.snackbar("Missing Info", "Please select address");
+      return;
+    }
+    if (selectedLat == null || selectedLng == null) {
+      Get.snackbar("Location Required", "Please select location on map");
+      return;
+    }
+
+    final success = widget.addressId != null
+        ? await controller.updateAddress(
+            addressId: widget.addressId!,
+            label: _labelFromType(),
+            addressLine: addressCtrl.text.trim(),
+            societyName: landmarkCtrl.text.trim(),
+            latitude: selectedLat!,
+            longitude: selectedLng!,
+            isDefault: isDefault,
+          )
+        : await controller.addAddress(
+            label: _labelFromType(),
+            addressLine: addressCtrl.text.trim(),
+            societyName: landmarkCtrl.text.trim(),
+            latitude: selectedLat!,
+            longitude: selectedLng!,
+            isDefault: isDefault,
+          );
+
+    if (success) {
+      Get.offAll(() => const RestaurantBottomNav(initialIndex: 2));
+    }
   }
 
   /// 🏷 ADDRESS TYPE CHIP

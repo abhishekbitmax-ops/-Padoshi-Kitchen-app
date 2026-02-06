@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
+import 'package:padoshi_kitchen/Modules/Auth/Model/Addressmodel.dart';
 
 class OrderInvoiceScreen extends StatelessWidget {
   final AuthController authCtrl = Get.find<AuthController>();
@@ -10,6 +11,17 @@ class OrderInvoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args = Get.arguments as Map<String, dynamic>?;
+    final address = args?["address"];
+    final modeArg = args?["mode"]?.toString();
+    final paymentArg = args?["paymentMode"]?.toString();
+    final mode =
+        modeArg ?? authCtrl.checkoutResponse.value?.delivery?.mode ?? "";
+    final paymentMode = paymentArg ?? "N/A";
+    final addressText = address == null
+        ? "Selected Address"
+        : _formatAddress(address);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       body: Column(
@@ -82,10 +94,12 @@ class OrderInvoiceScreen extends StatelessWidget {
 
           /// 💰 TOTAL CARD
           Obx(() {
-            final itemTotal = authCtrl.itemTotal;
-            final deliveryFee = 0; // Can be dynamic based on delivery mode
-            final platformFee = 0;
-            final grandTotal = itemTotal + deliveryFee + platformFee;
+            final pricing = authCtrl.checkoutResponse.value?.pricing;
+            final total =
+                pricing?.finalAmount ??
+                pricing?.grandTotalWithoutDelivery ??
+                pricing?.foodTotal ??
+                authCtrl.itemTotal;
 
             return Container(
               width: 140,
@@ -107,7 +121,7 @@ class OrderInvoiceScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    "₹$grandTotal",
+                    "₹$total",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -181,39 +195,63 @@ class OrderInvoiceScreen extends StatelessWidget {
                         Expanded(
                           child: _infoCard(
                             title: "DELIVER TO",
-                            value: "Selected Address",
+                            value:
+                                mode == "SELF_PICKUP"
+                                    ? "Self Pickup Selected"
+                                    : addressText,
                             icon: Icons.location_on_outlined,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _infoCard(
-                            title: "PAYMENT",
-                            value: "Online / UPI",
-                            icon: Icons.payment,
+                            title: "MODE",
+                            value: mode.isEmpty ? "N/A" : mode,
+                            icon: Icons.local_shipping_outlined,
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _infoCard(
+                      title: "PAYMENT",
+                      value: paymentMode,
+                      icon: Icons.payment,
                     ),
                   ),
 
                   /// 📊 BILL SUMMARY
                   _card(
                     child: Obx(() {
-                      final itemTotal = authCtrl.itemTotal;
-                      final deliveryFee = 0;
-                      final platformFee = 0;
-                      final grandTotal = itemTotal + deliveryFee + platformFee;
+                      final pricing = authCtrl.checkoutResponse.value?.pricing;
+                      final itemTotal =
+                          pricing?.itemTotal ??
+                          pricing?.foodTotal ??
+                          authCtrl.itemTotal;
+                      final gstAmount = pricing?.gstAmount;
+                      final platformFee = pricing?.platformFee;
+                      final deliveryFee = pricing?.deliveryCharge;
+                      final grandTotal =
+                          pricing?.finalAmount ??
+                          pricing?.grandTotalWithoutDelivery ??
+                          itemTotal;
 
                       return Column(
                         children: [
                           _billRow("Item Total", "₹$itemTotal"),
-                          _billRow(
-                            "Delivery Fee",
-                            deliveryFee == 0 ? "FREE" : "₹$deliveryFee",
-                            valueColor: deliveryFee == 0 ? Colors.green : null,
-                          ),
-                          _billRow("Platform Fee", "₹$platformFee"),
+                          if (gstAmount != null)
+                            _billRow("GST", "₹$gstAmount"),
+                          if (platformFee != null)
+                            _billRow("Platform Fee", "₹$platformFee"),
+                          if (deliveryFee != null)
+                            _billRow(
+                              "Delivery Fee",
+                              deliveryFee == 0 ? "FREE" : "₹$deliveryFee",
+                              valueColor:
+                                  deliveryFee == 0 ? Colors.green : null,
+                            ),
                           const Divider(height: 26),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -398,5 +436,16 @@ class OrderInvoiceScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _formatAddress(dynamic address) {
+    if (address is Address) {
+      final parts = <String>[
+        address.addressLine ?? "",
+        address.societyName ?? "",
+      ];
+      return parts.where((e) => e.trim().isNotEmpty).join(", ");
+    }
+    return address.toString();
   }
 }

@@ -4,7 +4,7 @@ import 'package:padoshi_kitchen/Utils/app_color.dart';
 import 'package:padoshi_kitchen/widgets/GetAddress.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
-import 'package:padoshi_kitchen/widgets/dummymodel.dart' as dm;
+import 'package:padoshi_kitchen/Modules/Auth/Model/Addressmodel.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -24,21 +24,19 @@ class _CartScreenState extends State<CartScreen>
   int deliveryMethod = 0; // 0 rider,1 third party,2 pickup
   int paymentMethod = 0; // 0 online,1 cod
 
-  int deliveryFee = 30;
-  int tax = 18;
-  dm.AddressModel? selectedAddress;
+  Address? selectedAddress;
 
   int get itemTotal => controller.itemTotal;
 
   int get grandTotal {
     if (controller.cartItems.isEmpty) {
-      return 0; // No charges when cart is empty
+      return 0;
     }
-    return itemTotal + deliveryFee + tax;
+    return itemTotal;
   }
 
   Future<void> openAddressBottomSheet(BuildContext context) async {
-    final result = await showModalBottomSheet<dm.AddressModel>(
+    final result = await showModalBottomSheet<Address>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -252,9 +250,39 @@ class _CartScreenState extends State<CartScreen>
                 ),
                 onPressed: isEmpty
                     ? null
-                    : () {
-                        // Checkout / Payment flow
-                        Get.to(() => OrderInvoiceScreen());
+                    : () async {
+                        final mode = deliveryMethod == 0
+                            ? "KITCHEN_RIDER"
+                            : deliveryMethod == 1
+                            ? "THIRD_PARTY"
+                            : "SELF_PICKUP";
+
+                        if (mode != "SELF_PICKUP" &&
+                            (selectedAddress?.id == null ||
+                                selectedAddress!.id!.isEmpty)) {
+                          Get.snackbar(
+                            "Address Required",
+                            "Please select delivery address",
+                          );
+                          return;
+                        }
+
+                        final ok = await controller.checkout(
+                          deliveryMode: mode,
+                          addressId: selectedAddress?.id,
+                        );
+
+                        if (ok) {
+                          Get.to(
+                            () => OrderInvoiceScreen(),
+                            arguments: {
+                              "address": selectedAddress,
+                              "mode": mode,
+                              "paymentMode":
+                                  paymentMethod == 0 ? "ONLINE" : "COD",
+                            },
+                          );
+                        }
                       },
                 child: const Row(
                   children: [
@@ -290,15 +318,7 @@ class _CartScreenState extends State<CartScreen>
           ),
           const SizedBox(height: 12),
 
-          _billRow("Item Total", "₹$itemTotal"),
-          const SizedBox(height: 8),
-          _billRow("Delivery Fee", "₹$deliveryFee"),
-          const SizedBox(height: 8),
-          _billRow("Taxes & Charges", "₹$tax"),
-
-          const Divider(height: 24),
-
-          _billRow("Grand Total", "₹$grandTotal", isTotal: true),
+          _billRow("Item Total", "₹$itemTotal", isTotal: true),
         ],
       ),
     );
@@ -513,7 +533,9 @@ class _CartScreenState extends State<CartScreen>
     return _card(
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => openAddressBottomSheet(context),
+        onTap: deliveryMethod == 2
+            ? null
+            : () => openAddressBottomSheet(context),
         child: Row(
           children: [
             const Icon(
@@ -531,19 +553,36 @@ class _CartScreenState extends State<CartScreen>
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    selectedAddress?.label ?? "Select Address",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  if (deliveryMethod == 2) ...[
+                    const Text(
+                      "Self Pickup Selected",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    selectedAddress?.fullAddress ??
-                        "Tap to choose delivery address",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      "You will pick up the order from the kitchen.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ] else ...[
+                    Text(
+                      (selectedAddress?.label ?? "Select Address")
+                          .toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      selectedAddress == null
+                          ? "Tap to choose delivery address"
+                          : _fullAddress(selectedAddress!),
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -697,5 +736,10 @@ class _CartScreenState extends State<CartScreen>
       ),
       child: child,
     );
+  }
+
+  String _fullAddress(Address addr) {
+    final parts = <String>[addr.addressLine ?? "", addr.societyName ?? ""];
+    return parts.where((e) => e.trim().isNotEmpty).join(", ");
   }
 }

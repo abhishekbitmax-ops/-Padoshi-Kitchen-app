@@ -608,14 +608,33 @@ class CheckoutResponse {
 }
 
 class Pricing {
+  final int? gstAmount;
+  final int? gstPercent;
+  final int? platformFee;
+  final int? itemTotal;
+  final int? grandTotalWithoutDelivery;
   final int? foodTotal;
   final int? deliveryCharge;
   final int? finalAmount;
 
-  Pricing({this.foodTotal, this.deliveryCharge, this.finalAmount});
+  Pricing({
+    this.gstAmount,
+    this.gstPercent,
+    this.platformFee,
+    this.itemTotal,
+    this.grandTotalWithoutDelivery,
+    this.foodTotal,
+    this.deliveryCharge,
+    this.finalAmount,
+  });
 
   factory Pricing.fromJson(Map<String, dynamic> json) {
     return Pricing(
+      gstAmount: json['gstAmount'],
+      gstPercent: json['gstPercent'],
+      platformFee: json['platformFee'],
+      itemTotal: json['itemTotal'],
+      grandTotalWithoutDelivery: json['grandTotalWithoutDelivery'],
       foodTotal: json['foodTotal'],
       deliveryCharge: json['deliveryCharge'],
       finalAmount: json['finalAmount'],
@@ -638,3 +657,6 @@ class DeliveryInfo {
     );
   }
 }
+
+
+

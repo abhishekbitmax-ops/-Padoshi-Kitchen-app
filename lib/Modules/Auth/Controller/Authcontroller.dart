@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:padoshi_kitchen/Modules/Auth/Model/Model.dart';
+import 'package:padoshi_kitchen/Modules/Auth/Model/Addressmodel.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Userbasicdetails.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Verifyotp.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
@@ -15,6 +16,7 @@ import 'package:path/path.dart' as path;
 
 class AuthController extends GetxController {
   final isLoading = false.obs;
+  final isAddressLoading = false.obs;
   final RxString selectedCategoryId = "".obs;
 
   // @override
@@ -672,6 +674,7 @@ class AuthController extends GetxController {
   /// Sends delivery mode and gets pricing + delivery info
   Future<bool> checkout({
     required String deliveryMode, // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
+    String? addressId,
   }) async {
     try {
       isCheckingOut.value = true;
@@ -685,11 +688,16 @@ class AuthController extends GetxController {
       final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Checkout));
 
       /// 🔥 REQUEST BODY (MATCHES YOUR API)
-      final body = {
-        "delivery": {
-          "mode": deliveryMode, // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
-        },
+      final delivery = {
+        "mode": deliveryMode, // SELF_PICKUP, KITCHEN_RIDER, THIRD_PARTY
       };
+      if (deliveryMode != "SELF_PICKUP" &&
+          addressId != null &&
+          addressId.isNotEmpty) {
+        delivery["addressId"] = addressId;
+      }
+
+      final body = {"delivery": delivery};
 
       debugPrint("CHECKOUT REQUEST: $body");
 
@@ -723,6 +731,208 @@ class AuthController extends GetxController {
       return false;
     } finally {
       isCheckingOut.value = false;
+    }
+  }
+
+  // ========== 📍 ADD ADDRESS API ==========
+  Future<bool> addAddress({
+    required String label,
+    required String addressLine,
+    required String societyName,
+    required double latitude,
+    required double longitude,
+    required bool isDefault,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return false;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Addaddress));
+
+      final body = {
+        "label": label,
+        "addressLine": addressLine,
+        "societyName": societyName,
+        "geoLocation": {
+          "type": "Point",
+          "coordinates": [longitude, latitude],
+        },
+        "isDefault": isDefault,
+      };
+
+      debugPrint("ADD ADDRESS REQUEST: $body");
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar("Success", data["message"] ?? "Address saved");
+        return true;
+      } else {
+        Get.snackbar("Error", data["message"] ?? "Failed to save address");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("ADD ADDRESS ERROR: $e");
+      Get.snackbar("Error", "Something went wrong");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ========== 📬 GET ADDRESS API ==========
+  final Rx<AddressResponse?> addressResponse = Rx<AddressResponse?>(null);
+
+  List<Address> get addresses => addressResponse.value?.addresses ?? [];
+
+  Future<void> fetchAddresses() async {
+    try {
+      isAddressLoading.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Getaddress));
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        addressResponse.value = AddressResponse.fromJson(decoded);
+      } else {
+        final data = jsonDecode(response.body);
+        Get.snackbar("Error", data["message"] ?? "Failed to load addresses");
+      }
+    } catch (e) {
+      debugPrint("GET ADDRESS ERROR: $e");
+      Get.snackbar("Error", "Something went wrong");
+    } finally {
+      isAddressLoading.value = false;
+    }
+  }
+
+  // ========== ✏️ UPDATE ADDRESS API ==========
+  Future<bool> updateAddress({
+    required String addressId,
+    required String label,
+    required String addressLine,
+    required String societyName,
+    required double latitude,
+    required double longitude,
+    required bool isDefault,
+  }) async {
+    try {
+      isLoading.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return false;
+      }
+
+      final url = Uri.parse(
+        "${ApiEndpoint.getUrl(ApiEndpoint.UpdateAddress)}/$addressId",
+      );
+
+      final body = {
+        "label": label,
+        "addressLine": addressLine,
+        "societyName": societyName,
+        "geoLocation": {
+          "type": "Point",
+          "coordinates": [longitude, latitude],
+        },
+        "isDefault": isDefault,
+      };
+
+      final response = await http.put(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar("Success", data["message"] ?? "Address updated");
+        return true;
+      } else {
+        Get.snackbar("Error", data["message"] ?? "Failed to update address");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("UPDATE ADDRESS ERROR: $e");
+      Get.snackbar("Error", "Something went wrong");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ========== 🗑️ DELETE ADDRESS API ==========
+  Future<bool> deleteAddress({required String addressId}) async {
+    try {
+      isLoading.value = true;
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        Get.snackbar("Session Expired", "Please login again");
+        return false;
+      }
+
+      final url = Uri.parse(
+        "${ApiEndpoint.getUrl(ApiEndpoint.DeleteAddress)}/$addressId",
+      );
+
+      final response = await http.delete(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar("Deleted", data["message"] ?? "Address deleted");
+        return true;
+      } else {
+        Get.snackbar("Error", data["message"] ?? "Failed to delete address");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("DELETE ADDRESS ERROR: $e");
+      Get.snackbar("Error", "Something went wrong");
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 }

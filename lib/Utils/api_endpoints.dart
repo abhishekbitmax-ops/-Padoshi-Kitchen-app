@@ -15,6 +15,10 @@ class ApiEndpoint {
   static const String cartItemdelete = "/cart";
 
   static const String Checkout = "/cart/checkout/preview";
+  static const String Addaddress = "/address";
+  static const String Getaddress = "/address";
+  static const String UpdateAddress = "/address";
+  static const String DeleteAddress = "/address";
 
   //  Helper — automatically combines base URL + endpoint
   static String getUrl(String endpoint) {
