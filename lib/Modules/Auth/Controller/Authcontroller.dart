@@ -11,6 +11,7 @@ import 'package:padoshi_kitchen/Modules/Auth/view/Verifyotp.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/Sharedpre.dart';
 import 'package:padoshi_kitchen/Utils/api_endpoints.dart';
+import 'package:padoshi_kitchen/Utils/socket_service.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
 
@@ -104,6 +105,8 @@ class AuthController extends GetxController {
           accessToken: data["accessToken"],
           refreshToken: data["refreshToken"],
         );
+        SocketService.connect(data["accessToken"]);
+        SocketService.bindOrderNotifications();
 
         final bool profileCompleted = data["profileCompleted"] ?? false;
 
@@ -664,6 +667,20 @@ class AuthController extends GetxController {
     } finally {
       removingItems.remove(menuItemId);
     }
+  }
+
+  /// 🧹 CLEAR CART LOCALLY (UI ONLY)
+  void clearCartLocal() {
+    cartResponse.value = CartResponse(
+      success: true,
+      cart: CartData(
+        userId: cartResponse.value?.cart?.userId,
+        kitchenId: cartResponse.value?.cart?.kitchenId,
+        updatedAt: DateTime.now().toIso8601String(),
+        items: [],
+      ),
+    );
+    TokenStorage.clearCart();
   }
 
   // ========== 🛍️ CHECKOUT API ==========

@@ -83,3 +83,7 @@ class GeoLocation {
     };
   }
 }
+
+
+// Order history address model
+

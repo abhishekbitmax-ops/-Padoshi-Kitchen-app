@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Editprofile.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/OrderHistoryScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/login.dart';
 import 'package:padoshi_kitchen/Utils/Sharedpre.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
@@ -26,15 +26,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-
-    /// 🎯 MATCH STATUS BAR WITH HEADER
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: AppColors.primary,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark, // iOS support
-      ),
-    );
 
     profileController.fetchProfile();
 
@@ -67,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: Colors.grey.shade100,
       body: Obx(() {
         final isLoading = profileController.isLoading.value;
         final user = profileController.profileResponse.value?.user;
@@ -76,206 +67,230 @@ class _ProfileScreenState extends State<ProfileScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        return RefreshIndicator(
-          onRefresh: _onRefresh,
-          color: AppColors.primary,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              /// 🔝 HEADER
-              AnnotatedRegion<SystemUiOverlayStyle>(
-                value: const SystemUiOverlayStyle(
-                  statusBarColor: Colors.transparent,
-                  statusBarIconBrightness: Brightness.light,
-                  statusBarBrightness: Brightness.dark,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.fromLTRB(20, topInset + 20, 20, 32),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.primary, AppColors.background],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(32),
-                      bottomRight: Radius.circular(32),
-                    ),
+        return Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: topInset,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.background],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// TOP ROW
-                      Row(
-                        children: [
-                          const Text(
-                            "My Profile",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: Colors.white,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  /// 🔝 HEADER (same style as Home)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primary, AppColors.background],
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// TOP ROW
+                        Row(
+                          children: [
+                            const Text(
+                              "My Profile",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const Spacer(),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(20),
-                            onTap: () {
-                              Get.to(() => const EditProfileScreen())?.then((
-                                _,
-                              ) {
-                                profileController.fetchProfile();
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.18),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    "Edit",
-                                    style: TextStyle(
+                            const Spacer(),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () {
+                                Get.to(() => const EditProfileScreen())?.then((
+                                  _,
+                                ) {
+                                  profileController.fetchProfile();
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      size: 16,
                                       color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      "Edit",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        /// PROFILE CARD
+                        Row(
+                          children: [
+                            /// AVATAR
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.background,
+                                  ],
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 32,
+                                backgroundImage: NetworkImage(
+                                  user?.profileImage ??
+                                      "https://i.pravatar.cc/150?img=3",
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 16),
+
+                            /// USER INFO
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user?.fullName ?? "—",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    user?.mobile != null
+                                        ? "+91 ${user!.mobile}"
+                                        : "—",
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 26),
-
-                      /// PROFILE CARD
-                      Row(
-                        children: [
-                          /// AVATAR
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.background,
-                                ],
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 32,
-                              backgroundImage: NetworkImage(
-                                user?.profileImage ??
-                                    "https://i.pravatar.cc/150?img=3",
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 16),
-
-                          /// USER INFO
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.fullName ?? "—",
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  user?.mobile != null
-                                      ? "+91 ${user!.mobile}"
-                                      : "—",
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              /// 🎞️ CONTENT
-              FadeTransition(
-                opacity: _fade,
-                child: SlideTransition(
-                  position: _slide,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _profileOption(
-                          icon: Icons.receipt_long,
-                          title: "My Orders",
-                          onTap: () {},
-                        ),
-                        _profileOption(
-                          icon: Icons.location_on_outlined,
-                          title: "Saved Addresses",
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => const AddressBottomSheet(),
-                            );
-                          },
-                        ),
-                        _profileOption(
-                          icon: Icons.payment,
-                          title: "Payment Methods",
-                          onTap: () {},
-                        ),
-                        _profileOption(
-                          icon: Icons.notifications_none,
-                          title: "Notifications",
-                          onTap: () {},
-                        ),
-                        _profileOption(
-                          icon: Icons.help_outline,
-                          title: "Help & Support",
-                          onTap: () {},
-                        ),
-                        _profileOption(
-                          icon: Icons.logout,
-                          title: "Logout",
-                          isLogout: true,
-                          onTap: _showLogoutDialog,
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
+
+                  const SizedBox(height: 16),
+
+                  /// 🎞️ CONTENT
+                  FadeTransition(
+                    opacity: _fade,
+                    child: SlideTransition(
+                      position: _slide,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _profileOption(
+                                icon: Icons.receipt_long,
+                                title: "My Orders",
+                                onTap: () {
+                                  Get.to(() => const OrderHistoryScreen());
+                                },
+                              ),
+                              _profileOption(
+                                icon: Icons.location_on_outlined,
+                                title: "Saved Addresses",
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => const AddressBottomSheet(),
+                                  );
+                                },
+                              ),
+                              _profileOption(
+                                icon: Icons.payment,
+                                title: "Payment Methods",
+                                onTap: () {},
+                              ),
+                              _profileOption(
+                                icon: Icons.notifications_none,
+                                title: "Notifications",
+                                onTap: () {},
+                              ),
+                              _profileOption(
+                                icon: Icons.help_outline,
+                                title: "Help & Support",
+                                onTap: () {},
+                              ),
+                              _profileOption(
+                                icon: Icons.logout,
+                                title: "Logout",
+                                isLogout: true,
+                                onTap: _showLogoutDialog,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         );
       }),
     );

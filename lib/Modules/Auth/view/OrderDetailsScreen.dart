@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/OrderTackingScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
 
@@ -171,7 +172,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     ),
                   ),
                   onPressed: () {
-                    Get.snackbar("Tracking", "Tracking screen not wired yet");
+                    if (orderId == "N/A" || orderId.trim().isEmpty) {
+                      Get.snackbar(
+                        "Tracking",
+                        "Order ID not found for tracking",
+                      );
+                      return;
+                    }
+
+                    Get.to(() => OrderTrackingScreen(orderId: orderId));
                   },
                   child: const Text(
                     "Track Order",

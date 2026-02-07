@@ -20,6 +20,8 @@ class ApiEndpoint {
   static const String UpdateAddress = "/address";
   static const String DeleteAddress = "/address";
   static const String PlaceOrder = "/cart/checkout";
+  static const String Ordertacking = "/orders/active";
+  static const String OrderHistory = "/orders/history";
 
   //  Helper — automatically combines base URL + endpoint
   static String getUrl(String endpoint) {

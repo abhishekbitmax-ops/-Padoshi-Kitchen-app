@@ -408,6 +408,7 @@ class _OrderInvoiceScreenState extends State<OrderInvoiceScreen> {
                               );
 
                               if (data == null) return;
+                              widget.authCtrl.clearCartLocal();
 
                           if (isCod) {
                             Get.to(

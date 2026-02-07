@@ -12,9 +12,9 @@ class CustomLoader extends StatelessWidget {
       color: Colors.black.withOpacity(0.25),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
@@ -36,16 +36,12 @@ class CustomLoader extends StatelessWidget {
                     return const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primary,
-                        AppColors.background,
-                      ],
+                      colors: [Colors.white, AppColors.background],
                     ).createShader(rect);
                   },
                   child: const CircularProgressIndicator(
                     strokeWidth: 4,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               ),
