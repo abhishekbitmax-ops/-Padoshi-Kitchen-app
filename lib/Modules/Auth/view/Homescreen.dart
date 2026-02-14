@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Model/Model.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Menuscreen.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/NotificationScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/navbar.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
 import 'package:shimmer/shimmer.dart';
@@ -187,7 +188,7 @@ class _HomescreenState extends State<Homescreen>
           _headerIcon(
             icon: Icons.notifications_none,
             onTap: () {
-              // TODO: Notifications screen
+              Get.to(() => const NotificationScreen());
             },
           ),
 

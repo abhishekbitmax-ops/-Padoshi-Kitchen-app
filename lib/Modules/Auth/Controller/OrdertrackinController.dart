@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:padoshi_kitchen/Modules/Auth/Model/Addressmodel.dart';
+import 'package:padoshi_kitchen/Modules/Auth/Model/Model.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Model/ordertrackingmodel.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Model/orderhistory_model.dart'
     as history;
@@ -19,6 +21,13 @@ class OrdertrackinController extends GetxController {
   final RxList<history.Order> historyOrders = <history.Order>[].obs;
   final isHistoryLoading = false.obs;
   final RxString historyError = "".obs;
+  final RxList<NotificationItem> notifications = <NotificationItem>[].obs;
+  final isNotificationLoading = false.obs;
+  final RxString notificationError = "".obs;
+  final RxList<Kitchen> nearbyKitchens = <Kitchen>[].obs;
+  final RxList<Kitchen> searchedKitchens = <Kitchen>[].obs;
+  final isKitchenSearchLoading = false.obs;
+  final RxString kitchenSearchError = "".obs;
 
   static const List<String> statusSteps = [
     "PLACED",
@@ -139,6 +148,255 @@ class OrdertrackinController extends GetxController {
       historyError.value = "Something went wrong";
     } finally {
       isHistoryLoading.value = false;
+    }
+  }
+
+  Future<void> fetchNotifications() async {
+    try {
+      isNotificationLoading.value = true;
+      notificationError.value = "";
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        notificationError.value = "Session expired. Please login again.";
+        return;
+      }
+
+      final url = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.GetNotification));
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        final parsed = NotificationsResponse.fromJson(decoded);
+        notifications.assignAll(parsed.notifications ?? <NotificationItem>[]);
+      } else {
+        final data = jsonDecode(response.body);
+        notificationError.value =
+            data["message"] ?? "Failed to load notifications";
+      }
+    } catch (_) {
+      notificationError.value = "Something went wrong";
+    } finally {
+      isNotificationLoading.value = false;
+    }
+  }
+
+  Future<void> fetchNearbyKitchensByLocation({
+    required double lat,
+    required double lng,
+    int radius = 3000,
+  }) async {
+    try {
+      isKitchenSearchLoading.value = true;
+      kitchenSearchError.value = "";
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        kitchenSearchError.value = "Session expired. Please login again.";
+        return;
+      }
+
+      final url = Uri.parse(
+        "${ApiEndpoint.baseUrl}/kitchens?lat=$lat&lng=$lng&radius=$radius",
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        final kitchens = _extractKitchenList(decoded);
+        nearbyKitchens.assignAll(kitchens);
+        searchedKitchens.assignAll(kitchens);
+      } else {
+        try {
+          final data = jsonDecode(response.body);
+          kitchenSearchError.value =
+              data["message"] ?? "Failed to load nearby kitchens";
+        } catch (_) {
+          kitchenSearchError.value = "Failed to load nearby kitchens";
+        }
+      }
+    } catch (_) {
+      kitchenSearchError.value = "Something went wrong";
+    } finally {
+      isKitchenSearchLoading.value = false;
+    }
+  }
+
+  Future<void> searchKitchensBySociety(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      kitchenSearchError.value = "";
+      searchedKitchens.assignAll(nearbyKitchens);
+      return;
+    }
+
+    try {
+      isKitchenSearchLoading.value = true;
+      kitchenSearchError.value = "";
+
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        kitchenSearchError.value = "Session expired. Please login again.";
+        return;
+      }
+
+      final base = Uri.parse(ApiEndpoint.getUrl(ApiEndpoint.Searchsociaties));
+      final uri = base.replace(
+        queryParameters: {
+          ...base.queryParameters,
+          "q": trimmed,
+        },
+      );
+
+      final response = await http.get(
+        uri,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        final kitchens = _extractKitchenList(decoded);
+        searchedKitchens.assignAll(kitchens);
+      } else {
+        try {
+          final data = jsonDecode(response.body);
+          kitchenSearchError.value =
+              data["message"] ?? "Failed to search kitchens";
+        } catch (_) {
+          kitchenSearchError.value = "Failed to search kitchens";
+        }
+      }
+    } catch (_) {
+      kitchenSearchError.value = "Something went wrong";
+    } finally {
+      isKitchenSearchLoading.value = false;
+    }
+  }
+
+  Future<bool> markNotificationsRead({bool markAllLocal = true}) async {
+    try {
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        notificationError.value = "Session expired. Please login again.";
+        return false;
+      }
+
+      final url = Uri.parse(
+        ApiEndpoint.getUrl(ApiEndpoint.MarkNotificationRead),
+      );
+      final response = await http.patch(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (!markAllLocal) return true;
+        for (final n in notifications) {
+          n.isRead = true;
+        }
+        notifications.refresh();
+        return true;
+      }
+
+      try {
+        final data = jsonDecode(response.body);
+        notificationError.value =
+            data["message"] ?? "Failed to mark notifications as read";
+      } catch (_) {
+        notificationError.value = "Failed to mark notifications as read";
+      }
+      return false;
+    } catch (_) {
+      notificationError.value = "Something went wrong";
+      return false;
+    }
+  }
+
+  Future<void> markSingleNotificationRead(NotificationItem item) async {
+    if (item.isRead == true) return;
+
+    item.isRead = true;
+    notifications.refresh();
+
+    final ok = await markNotificationReadById(item.id, markLocal: false);
+    if (!ok) {
+      item.isRead = false;
+      notifications.refresh();
+    }
+  }
+
+  Future<bool> markNotificationReadById(
+    String? notificationId, {
+    bool markLocal = true,
+  }) async {
+    if (notificationId == null || notificationId.isEmpty) {
+      notificationError.value = "Invalid notification id";
+      return false;
+    }
+
+    try {
+      final token = TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        notificationError.value = "Session expired. Please login again.";
+        return false;
+      }
+
+      final url = Uri.parse(
+        "${ApiEndpoint.baseUrl}/notification/read/$notificationId",
+      );
+
+      final response = await http.patch(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (markLocal) {
+          final index = notifications.indexWhere((n) => n.id == notificationId);
+          if (index != -1) {
+            notifications[index].isRead = true;
+            notifications.refresh();
+          }
+        }
+        return true;
+      }
+
+      try {
+        final data = jsonDecode(response.body);
+        notificationError.value =
+            data["message"] ?? "Failed to mark notification as read";
+      } catch (_) {
+        notificationError.value = "Failed to mark notification as read";
+      }
+      return false;
+    } catch (_) {
+      notificationError.value = "Something went wrong";
+      return false;
     }
   }
 
@@ -289,5 +547,18 @@ class OrdertrackinController extends GetxController {
       }
     }
     return null;
+  }
+
+  List<Kitchen> _extractKitchenList(dynamic decoded) {
+    if (decoded is Map<String, dynamic>) {
+      final kitchensRaw = decoded["kitchens"];
+      if (kitchensRaw is List) {
+        return kitchensRaw
+            .whereType<Map>()
+            .map((e) => Kitchen.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    }
+    return <Kitchen>[];
   }
 }

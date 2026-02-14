@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:padoshi_kitchen/Modules/Auth/Controller/Authcontroller.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Editprofile.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/HelpSupportScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/OrderHistoryScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/login.dart';
 import 'package:padoshi_kitchen/Utils/Sharedpre.dart';
@@ -260,20 +261,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   );
                                 },
                               ),
-                              _profileOption(
-                                icon: Icons.payment,
-                                title: "Payment Methods",
-                                onTap: () {},
-                              ),
-                              _profileOption(
-                                icon: Icons.notifications_none,
-                                title: "Notifications",
-                                onTap: () {},
-                              ),
+
                               _profileOption(
                                 icon: Icons.help_outline,
                                 title: "Help & Support",
-                                onTap: () {},
+                                onTap: () {
+                                  Get.to(() => const HelpSupportScreen());
+                                },
                               ),
                               _profileOption(
                                 icon: Icons.logout,

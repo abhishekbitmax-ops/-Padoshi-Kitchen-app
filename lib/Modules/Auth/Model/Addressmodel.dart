@@ -85,5 +85,136 @@ class GeoLocation {
 }
 
 
-// Order history address model
+//  notification  model class -----
+
+class NotificationsResponse {
+  bool? success;
+  List<NotificationItem>? notifications;
+
+  NotificationsResponse({this.success, this.notifications});
+
+  NotificationsResponse.fromJson(Map<String, dynamic> json) {
+    success = json['success'];
+    notifications = json['notifications'] != null
+        ? List<NotificationItem>.from(
+            json['notifications'].map((x) => NotificationItem.fromJson(x)),
+          )
+        : null;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'success': success,
+        'notifications': notifications?.map((x) => x.toJson()).toList(),
+      };
+}
+
+class NotificationItem {
+  String? id;
+  String? userId;
+  String? kitchenId;
+  String? role;
+  String? type;
+  String? title;
+  String? message;
+  NotificationData? data;
+  bool? isRead;
+  DeliveredStatus? delivered;
+  String? createdAt;
+  String? updatedAt;
+  int? v;
+
+  NotificationItem({
+    this.id,
+    this.userId,
+    this.kitchenId,
+    this.role,
+    this.type,
+    this.title,
+    this.message,
+    this.data,
+    this.isRead,
+    this.delivered,
+    this.createdAt,
+    this.updatedAt,
+    this.v,
+  });
+
+  NotificationItem.fromJson(Map<String, dynamic> json) {
+    id = json['_id'];
+    userId = json['userId'];
+    kitchenId = json['kitchenId'];
+    role = json['role'];
+    type = json['type'];
+    title = json['title'];
+    message = json['message'];
+    data =
+        json['data'] != null ? NotificationData.fromJson(json['data']) : null;
+    isRead = json['isRead'];
+    delivered = json['delivered'] != null
+        ? DeliveredStatus.fromJson(json['delivered'])
+        : null;
+    createdAt = json['createdAt'];
+    updatedAt = json['updatedAt'];
+    v = json['__v'];
+  }
+
+  Map<String, dynamic> toJson() => {
+        '_id': id,
+        'userId': userId,
+        'kitchenId': kitchenId,
+        'role': role,
+        'type': type,
+        'title': title,
+        'message': message,
+        'data': data?.toJson(),
+        'isRead': isRead,
+        'delivered': delivered?.toJson(),
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+        '__v': v,
+      };
+}
+
+class NotificationData {
+  String? orderId;
+
+  NotificationData({this.orderId});
+
+  NotificationData.fromJson(Map<String, dynamic> json) {
+    orderId = json['orderId'];
+  }
+
+  Map<String, dynamic> toJson() => {
+        'orderId': orderId,
+      };
+}
+
+class DeliveredStatus {
+  bool? socket;
+  bool? push;
+  bool? email;
+  bool? sms;
+
+  DeliveredStatus({
+    this.socket,
+    this.push,
+    this.email,
+    this.sms,
+  });
+
+  DeliveredStatus.fromJson(Map<String, dynamic> json) {
+    socket = json['socket'];
+    push = json['push'];
+    email = json['email'];
+    sms = json['sms'];
+  }
+
+  Map<String, dynamic> toJson() => {
+        'socket': socket,
+        'push': push,
+        'email': email,
+        'sms': sms,
+      };
+}
+
 

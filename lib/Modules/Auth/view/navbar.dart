@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/Homescreen.dart';
+import 'package:padoshi_kitchen/Modules/Auth/view/KitchenSearchScreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/cartscreen.dart';
 import 'package:padoshi_kitchen/Modules/Auth/view/profile.dart';
 import 'package:padoshi_kitchen/Utils/app_color.dart';
@@ -28,16 +29,16 @@ class _RestaurantBottomNavState extends State<RestaurantBottomNav> {
 
   final List<IconData> icons = [
     Icons.home_outlined,
-    Icons.menu_book_outlined,
+    Icons.kitchen_outlined,
     Icons.shopping_cart_outlined,
     Icons.person_outline,
   ];
 
-  final List<String> labels = ["Home", "Menu", "Cart", "Profile"];
+  final List<String> labels = ["Home", "Kitchen", "Cart", "Profile"];
 
   final List<Widget> screens = [
     Homescreen(),
-    Text("Menu Screen"),
+    KitchenSearchScreen(),
     CartScreen(),
     ProfileScreen(),
   ];

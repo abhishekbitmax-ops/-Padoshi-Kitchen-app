@@ -13,7 +13,6 @@ class ApiEndpoint {
   static const String GetCart = "/cart";
   static const String Getprofile = "/profile/me";
   static const String cartItemdelete = "/cart";
-
   static const String Checkout = "/cart/checkout/preview";
   static const String Addaddress = "/address";
   static const String Getaddress = "/address";
@@ -22,6 +21,9 @@ class ApiEndpoint {
   static const String PlaceOrder = "/cart/checkout";
   static const String Ordertacking = "/orders/active";
   static const String OrderHistory = "/orders/history";
+  static const String Searchsociaties = "/kitchens/society-nearby";
+  static const String GetNotification = "/notification";
+  static const String MarkNotificationRead = "/notification/read-all";
 
   //  Helper — automatically combines base URL + endpoint
   static String getUrl(String endpoint) {

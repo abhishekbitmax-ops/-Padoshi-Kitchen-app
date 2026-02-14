@@ -34,6 +34,7 @@ class GlobalNotificationService {
         ios: IosSounds.glass,
         volume: 1.0,
         looping: false,
+        
       );
     } catch (_) {
       // Plugin not registered or unsupported platform.
